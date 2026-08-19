@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
+  <meta name="theme-color" content="#07142d" />
+  <title>Cue Arena Online v5 — Multiplayer</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body data-mode="snooker">
+<main id="app">
+  <canvas id="game" aria-label="Top-down cue sports table"></canvas>
+
+  <header class="matchbar">
+    <button id="menuBtn" class="icon-btn menu-btn" aria-label="Menu"><i></i><i></i><i></i></button>
+    <section id="leftPlayer" class="player-card active">
+      <div class="avatar p1"><b>P1</b><span>1</span></div>
+      <div class="player-copy"><b id="p1Name">Player 1</b><div id="p1Rail" class="pot-rail"></div><small id="p1Break">BREAK 0</small></div>
+      <strong id="p1Score" class="score">0</strong>
+    </section>
+    <section class="mode-center">
+      <small id="modeName">SNOOKER</small>
+      <b id="ballOn">RED</b>
+      <span id="modeDetail">15 REDS</span>
+    </section>
+    <section id="rightPlayer" class="player-card right">
+      <strong id="p2Score" class="score">0</strong>
+      <div class="player-copy right-copy"><b id="p2Name">AI · MEDIUM</b><div id="p2Rail" class="pot-rail"></div><small id="p2Break">BREAK 0</small></div>
+      <div class="avatar ai"><b>AI</b><span>AI</span></div>
+    </section>
+    <div id="networkBadge" class="network-badge">OFFLINE</div>
+    <button id="spinBtn" class="spin-trigger" aria-label="Cue ball spin"><span class="mini-ball"><i id="spinMiniDot"></i></span></button>
+  </header>
+
+  <section id="powerControl" class="power-control" aria-label="Pull power and release">
+    <div id="powerValue" class="power-value">0</div>
+    <div id="powerTrack" class="power-track"><div class="power-scale"></div><div id="powerFill" class="power-fill"></div><div id="powerKnob" class="power-knob"></div></div>
+  </section>
+
+  <section id="aimWheel" class="aim-wheel" aria-label="Fine aim">
+    <div id="aimWheelDisc" class="aim-wheel-disc"><div class="aim-ticks"></div><div class="aim-core"><i id="aimWheelNeedle"></i></div></div>
+  </section>
+
+  <button class="cue-card" aria-label="Cue"><span></span></button>
+  <div id="toast" class="toast"></div>
+  <div id="ballInHand" class="ball-in-hand">BALL IN HAND</div>
+  <span id="turnDot" class="turn-dot"></span><span id="turnLabel" class="hidden-text">Player 1</span><span id="modeBadge" class="hidden-text"></span>
+  <span id="aiState" class="hidden-text">READY</span><span id="fps" class="hidden-text">60</span>
+
+  <section id="spinPanel" class="spin-panel">
+    <small>ENGLISH / SPIN</small>
+    <div id="spinPad" class="spin-pad"><span class="cross h"></span><span class="cross v"></span><i id="spinDot"></i></div>
+    <b id="spinText">CENTER</b><button id="spinCenter">CENTER</button>
+  </section>
+
+  <div id="scrim" class="scrim"></div>
+  <aside id="menuPanel" class="menu-panel">
+    <div class="menu-head"><div><small>CUE ARENA ONLINE v5</small><h2>Match</h2></div><button id="menuClose" class="close-btn">×</button></div>
+    <label>Game mode<select id="gameMode"><option value="snooker">Snooker</option><option value="8ball">8 Ball</option><option value="9ball">9 Ball</option></select></label>
+    <label>Opponent<select id="matchMode"><option value="ai" selected>Play vs AI</option><option value="local">Local 2 Player</option><option value="online">Online Friend</option></select></label>
+    <label>AI level<select id="aiDifficulty"><option value="easy">Easy</option><option value="medium" selected>Medium</option><option value="hard">Hard</option><option value="expert">Expert</option></select></label>
+    <label>Power side<select id="powerSide"><option value="left" selected>Left</option><option value="right">Right</option></select></label>
+    <div class="toggle-row"><span>Fine aim wheel</span><input id="aimWheelEnabled" type="checkbox" checked /></div>
+    <div class="toggle-row"><span>Sound</span><input id="soundEnabled" type="checkbox" checked /></div>
+    <label>Volume<input id="soundVolume" type="range" min="0" max="100" value="78" /></label>
+    <button id="fullscreenBtn" class="secondary-btn">Fullscreen</button>
+    <button id="restart" class="primary-btn">New rack</button>
+  </aside>
+
+  <section id="modeHub" class="mode-hub show">
+    <div class="hub-top"><span class="hub-mark">CA</span><div><small>TOP-DOWN 3D CUE SPORTS</small><h1>CUE ARENA</h1></div></div>
+    <div class="mode-cards">
+      <button class="mode-card snooker" data-mode="snooker"><span class="mode-balls"><i></i><i></i><i></i></span><b>SNOOKER</b><small>Precision • position • safety</small></button>
+      <button class="mode-card eight" data-mode="8ball"><span class="mode-ball eight-ball">8</span><b>8 BALL</b><small>Solids • stripes • black</small></button>
+      <button class="mode-card nine" data-mode="9ball"><span class="mode-ball nine-ball">9</span><b>9 BALL</b><small>Lowest first • combo finish</small></button>
+    </div>
+    <div class="hub-foot"><button id="onlineOpenBtn" class="online-hub-btn">ONLINE WITH FRIEND</button><span>OR SELECT A MODE FOR OFFLINE PLAY</span><label><input id="autoFullscreen" type="checkbox" checked /> Fullscreen on start</label></div>
+  </section>
+
+
+  <section id="onlinePanel" class="online-panel">
+    <div class="online-card">
+      <div class="online-head"><div><small>PRIVATE MULTIPLAYER</small><h2>Play with a friend</h2></div><button id="onlineClose" class="close-btn">×</button></div>
+      <p class="online-note">Create a room and send the 5-character code to your friend. Both players use the same Render URL.</p>
+      <label>Nickname<input id="onlineName" maxlength="18" value="Player 1" autocomplete="nickname" /></label>
+      <label>Game mode<select id="onlineGameMode"><option value="snooker">Snooker</option><option value="8ball">8 Ball</option><option value="9ball">9 Ball</option></select></label>
+      <button id="onlineCreate" class="primary-btn online-create">Create private room</button>
+      <div class="online-divider"><span>OR JOIN</span></div>
+      <div class="join-row"><input id="onlineJoinCode" maxlength="5" placeholder="ROOM CODE" autocomplete="off" /><button id="onlineJoin" class="secondary-btn">Join</button></div>
+      <div class="room-code-box"><small>ROOM CODE</small><strong id="onlineCodeDisplay">— — — — —</strong><button id="onlineCopy" class="secondary-btn">Copy code</button></div>
+      <div id="onlineWaiting" class="online-waiting">NOT CONNECTED</div>
+      <button id="onlineLeave" class="online-leave">Leave online room</button>
+    </div>
+  </section>
+
+  <section id="versusIntro" class="versus-intro"><div class="vs-card"><span class="vs-avatar">P1</span><b>VS</b><span class="vs-avatar ai">AI</span></div><em id="versusText">PLAYER 1 VS AI</em></section>
+  <section id="helpPanel" class="help-panel"><button id="helpClose">×</button></section><button id="quickHelpBtn" class="hidden-text">?</button>
+  <div class="rotate-device"><div>↻</div><b>ROTATE TO LANDSCAPE</b></div>
+</main>
+<script src="game.js"></script>
+</body>
+</html>
