@@ -12,8 +12,13 @@ export class PhysicsWorld {
     this.totalSteps=0;
   }
   setTable(table){this.table=table||TABLE;this.cushions.setTable(this.table);this.pockets.setTable(this.table);}
-  addBall(b){this.balls.push(b);return b;}
+  addBall(b){this.balls.push(b);this.syncRenderState(b);return b;}
   clear(){this.balls.length=0;this.accumulator=0;this.time=0;this.totalSteps=0;}
+  syncRenderState(ball=null){
+    const list=ball?[ball]:this.balls;
+    for(const b of list){if(!b)continue;b._renderPrevX=b.position.x;b._renderPrevZ=b.position.y;b._renderPrevFall=b.fall||0;b._renderPrevQ=Array.from(b.orientation||[0,0,0,1]);}
+  }
+  renderAlpha(){return Math.max(0,Math.min(1,this.accumulator/PHYSICS.fixedDt));}
   allStopped(){for(const b of this.balls)if(!b.potted&&!b.inHand&&!b.sleeping)return false;return true;}
   movingCount(){let n=0;for(const b of this.balls)if(!b.potted&&!b.inHand&&!b.sleeping)n++;return n;}
 
@@ -25,6 +30,10 @@ export class PhysicsWorld {
   }
 
   step(dt){
+    // Save the last fully solved state once per fixed physics step. Rendering
+    // interpolates from this state to the newly solved state without changing
+    // collision/rule timing.
+    for(const b of this.balls){b._renderPrevX=b.position.x;b._renderPrevZ=b.position.y;b._renderPrevFall=b.fall||0;b._renderPrevQ=Array.from(b.orientation||[0,0,0,1]);}
     let maxSpeedSq=0,minR=Infinity,active=0;
     for(const b of this.balls){
       if(b.potted||b.inHand)continue;if(!b.sleeping)active++;

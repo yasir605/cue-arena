@@ -284,3 +284,33 @@ body.mobile-ui .spin-pad,body.mobile-ui .power-control,body.mobile-ui .mobile-ai
   body.mobile-ui .online-card{width:min(100%,430px)}
   body.mobile-ui .result-card{width:min(100%,430px)}
 }
+
+/* v5.5 smooth-motion presentation pass */
+.player-card{transition:border-color .18s ease,box-shadow .18s ease,transform .18s cubic-bezier(.2,.8,.2,1)}
+.player-card.turn-enter{animation:turnEnter .34s cubic-bezier(.2,.85,.25,1)}
+.score{transition:transform .16s ease,filter .16s ease}
+.score.score-pop{animation:scorePop .34s cubic-bezier(.16,.9,.25,1)}
+.toast{will-change:transform,opacity;transition:opacity .18s ease,transform .18s cubic-bezier(.2,.8,.2,1)}
+.ball-in-hand{transform:translate(-50%,-5px) scale(.96);transition:opacity .18s ease,transform .18s cubic-bezier(.2,.8,.2,1)}
+.ball-in-hand.show{transform:translate(-50%,0) scale(1)}
+.spin-panel{will-change:transform,opacity;transition:opacity .20s ease,transform .20s cubic-bezier(.2,.8,.2,1)}
+.scrim{transition:opacity .20s ease}
+.menu-panel{will-change:transform;transition:transform .26s cubic-bezier(.18,.82,.24,1)}
+.mode-hub{transition:opacity .24s ease}
+.online-panel.open .online-card{animation:panelIn .28s cubic-bezier(.18,.82,.24,1)}
+.result-panel.show .result-card{animation:resultIn .42s cubic-bezier(.16,.9,.22,1)}
+.versus-intro.show .vs-card{animation:versusIn .34s cubic-bezier(.18,.9,.25,1)}
+.pot-slot.filled{animation:potIn .26s cubic-bezier(.16,.9,.25,1)}
+.primary-btn,.secondary-btn,.online-hub-btn,.close-btn,.menu-btn,.spin-trigger,.cue-card{transition:transform .12s ease,filter .15s ease,box-shadow .15s ease}
+.primary-btn:active,.secondary-btn:active,.online-hub-btn:active,.close-btn:active,.menu-btn:active,.spin-trigger:active,.cue-card:active{transform:translateY(1px) scale(.985)}
+@keyframes turnEnter{0%{transform:scale(.985);filter:brightness(.9)}55%{transform:scale(1.018);filter:brightness(1.16)}100%{transform:scale(1);filter:none}}
+@keyframes scorePop{0%{transform:scale(1)}48%{transform:scale(1.24);filter:brightness(1.45)}100%{transform:scale(1);filter:none}}
+@keyframes panelIn{0%{opacity:0;transform:translateY(14px) scale(.975)}100%{opacity:1;transform:none}}
+@keyframes resultIn{0%{opacity:0;transform:translateY(18px) scale(.94)}60%{opacity:1;transform:translateY(-3px) scale(1.012)}100%{transform:none}}
+@keyframes versusIn{0%{opacity:0;transform:scale(.90)}58%{opacity:1;transform:scale(1.045)}100%{transform:scale(1)}}
+@keyframes potIn{0%{opacity:.2;transform:scale(.45)}70%{transform:scale(1.22)}100%{opacity:1;transform:scale(1)}}
+body.mobile-ui .player-card.turn-enter{animation-duration:.26s}
+body.mobile-ui .score.score-pop{animation-duration:.28s}
+body.mobile-ui .online-panel.open .online-card{animation-duration:.22s}
+body.mobile-ui .result-panel.show .result-card{animation-duration:.30s}
+@media(prefers-reduced-motion:reduce){.player-card.turn-enter,.score.score-pop,.online-panel.open .online-card,.result-panel.show .result-card,.versus-intro.show .vs-card,.pot-slot.filled{animation:none!important}.menu-panel,.spin-panel,.toast,.ball-in-hand,.mode-hub{transition-duration:.01ms!important}}

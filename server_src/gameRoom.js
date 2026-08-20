@@ -44,7 +44,7 @@ export class GameRoom {
     this.cue.angle=angle;this.cue.power=power;this.cue.spinX=spinX;this.cue.spinY=spinY;
     if(!this.cue.strike(power)){this.match.cancelShot();return{ok:false,error:'Cue strike failed.'};}
     let steps=0,maxSteps=Math.ceil(18/PHYSICS.fixedDt),everMoving=false;
-    const motionFrames=[],sampleEvery=4; // authoritative ~30 Hz motion stream
+    const motionFrames=[],sampleEvery=3; // authoritative 40 Hz motion stream; clients interpolate to display refresh
     while(steps<maxSteps){
       this.world.step(PHYSICS.fixedDt);steps++;
       if(!this.world.allStopped())everMoving=true;

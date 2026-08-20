@@ -18,15 +18,18 @@ const MOBILE_DEVICE=!!((globalThis.matchMedia?.('(pointer: coarse)')?.matches)||
 cue.angle=0;cue.power=.45;view.setGameMode(gameMode);
 let aiMode=true,aiDifficulty='medium',match=null,ai=null,lastAITurn=false,humanCue={spinX:0,spinY:0,power:.45},statusTimer=0,shotClock=0,wasMoving=false,breakRails=[[],[]],lastHUDTurn=0,cueScratchLatched=false,cueRecoveryHoldUntil=0;
 let onlineMode=false,onlineReady=false,onlineSeat=null,onlineAnimating=false,onlinePendingShot=false,onlineRoomCode='',onlineLastSnapshot=null,onlineShotSeq=0,onlineStreamActive=false,onlineAimLastSent=0,onlineAimPullback=0;
-let onlineLocalCue={angle:0,power:.45,spinX:0,spinY:0};
-const online=new OnlineClient({onStatus:s=>updateNetworkBadge(s),onMessage:handleOnlineMessage,onClose:()=>{if(onlineMode){onlineReady=false;onlineAnimating=false;onlineStreamActive=false;showStatus('CONNECTION LOST',2200,'foul');renderHUD();}}});
+let onlineLocalCue={angle:0,power:.45,spinX:0,spinY:0},onlineRemoteAimTarget=null,onlineRemotePullback=0;
+let hudPrevScores=[null,null],hudPrevTurn=null;
+const online=new OnlineClient({onStatus:s=>updateNetworkBadge(s),onMessage:handleOnlineMessage,onClose:()=>{if(onlineMode){onlineReady=false;onlineAnimating=false;onlineStreamActive=false;onlineRemoteAimTarget=null;view.setExternalMotion?.(false);showStatus('CONNECTION LOST',2200,'foul');renderHUD();}}});
 
 function isPool(){return gameMode==='8ball'||gameMode==='9ball';}
 function isBallInHand(){return !!(match?.ballInHandD||match?.ballInHandAnywhere);}
 function humanOwnsTurn(){return onlineMode?onlineReady&&onlineSeat===match?.turn:!ai?.isAITurn(match);}
 function canHumanAim(){return !!match&&!onlineAnimating&&!onlinePendingShot&&!match.shotActive&&!view.isStrokeAnimating()&&!isBallInHand()&&match.stage!=='over'&&humanOwnsTurn()&&world.allStopped();}
 function updateNetworkBadge(text){const e=$('#networkBadge');if(!e)return;e.textContent=onlineMode?`${text}${onlineRoomCode?' · '+onlineRoomCode:''}`:'OFFLINE';e.classList.toggle('online',onlineMode&&online.connected);}
-function showStatus(text,ms=1500,type='normal'){const e=$('#toast');e.textContent=text;e.dataset.type=type;e.classList.add('show');clearTimeout(statusTimer);statusTimer=setTimeout(()=>e.classList.remove('show'),ms);}
+function showStatus(text,ms=1500,type='normal'){const e=$('#toast');e.textContent=text;e.dataset.type=type;e.classList.remove('show');void e.offsetWidth;e.classList.add('show');clearTimeout(statusTimer);statusTimer=setTimeout(()=>e.classList.remove('show'),ms);}
+function animateClass(el,name){if(!el)return;el.classList.remove(name);void el.offsetWidth;el.classList.add(name);const done=()=>{el.classList.remove(name);el.removeEventListener('animationend',done);};el.addEventListener('animationend',done);}
+const angleDelta=(a,b)=>Math.atan2(Math.sin(a-b),Math.cos(a-b));
 function haptic(p){try{navigator.vibrate?.(p);}catch(_){}}
 function ballColor(b){return b?.name==='Cue'?'#f7f7f2':b?.color||'#111';}
 function renderRail(el,balls){if(!el)return;el.innerHTML='';for(let i=0;i<8;i++){const s=document.createElement('i');s.className='pot-slot';const b=balls[i];if(b){s.classList.add('filled');s.style.background=ballColor(b);if(b.number){s.dataset.number=String(b.number);s.classList.add(b.poolGroup==='stripe'?'stripe':'solid');}}el.appendChild(s);}}
@@ -45,11 +48,16 @@ function restoreLocalOnlineCue(){
   cue.angle=onlineLocalCue.angle;cue.power=onlineLocalCue.power;cue.spinX=onlineLocalCue.spinX;cue.spinY=onlineLocalCue.spinY;onlineAimPullback=0;view.setPullback(0);syncSpinUI?.();
 }
 function applyOnlineMotionFrame(msg){
+  // The rAF loop owns rendering; network packets only update interpolation targets.
   if(!onlineMode||!onlineAnimating||!Array.isArray(msg?.balls))return;
-  const byKey=new Map(world.balls.map(b=>[ballSnapshotKey(b),b]));
-  for(const row of msg.balls){if(!Array.isArray(row)||row.length<12)continue;const b=byKey.get(row[0]);if(!b)continue;const wasPotted=!!b.potted;b.position.set(+row[1]||0,+row[2]||0);b.velocity.set(+row[3]||0,+row[4]||0);for(let i=0;i<4;i++)b.orientation[i]=+row[5+i]||0;b.potted=!!row[9];b.fall=+row[10]||0;b.inHand=!!row[11];b.sleeping=false;b.motionState='rolling';if(!wasPotted&&b.potted){audio.pocket(b);view.notifyPocket?.(b);}}
-  // The rAF loop owns rendering. Rendering here as well caused online mobile
-  // clients to draw at ~90 fps (30 Hz network frames + display rAF).
+  const byKey=new Map(world.balls.map(b=>[ballSnapshotKey(b),b])),receivedAt=performance.now();
+  for(const row of msg.balls){
+    if(!Array.isArray(row)||row.length<12)continue;const b=byKey.get(row[0]);if(!b)continue;const wasPotted=!!b.potted;
+    const q=[+row[5]||0,+row[6]||0,+row[7]||0,+row[8]||0];
+    view.setNetworkTarget?.(b,{x:+row[1]||0,z:+row[2]||0,vx:+row[3]||0,vz:+row[4]||0,q,potted:!!row[9],fall:+row[10]||0},receivedAt);
+    b.position.set(+row[1]||0,+row[2]||0);b.velocity.set(+row[3]||0,+row[4]||0);for(let i=0;i<4;i++)b.orientation[i]=q[i];b.potted=!!row[9];b.fall=+row[10]||0;b.inHand=!!row[11];b.sleeping=false;b.motionState='rolling';
+    if(!wasPotted&&b.potted){audio.pocket(b);view.notifyPocket?.(b);}
+  }
 }
 function hideResultPanel(){const p=$('#resultPanel');if(p)p.classList.remove('show');const b=$('#resultRematch');if(b){b.disabled=false;b.textContent='REMATCH';}}
 function showResultPanel(snapshot=onlineLastSnapshot,reason=''){
@@ -65,7 +73,7 @@ function ballSnapshotKey(b){return b?.number!=null?`n:${b.number}`:`name:${b?.na
 function applyOnlineSnapshot(snapshot,{quiet=false}={}){
   if(!snapshot)return;
   onlineLastSnapshot=snapshot;
-  if(snapshot.mode&&snapshot.mode!==gameMode){gameMode=snapshot.mode;cueBall=rackBalls();cue.setCueBall(cueBall);view.setGameMode(gameMode);breakRails=[[],[]];lastHUDTurn=0;buildMatch();$('#gameMode').value=gameMode;}
+  if(snapshot.mode&&snapshot.mode!==gameMode){gameMode=snapshot.mode;cueBall=rackBalls();cue.setCueBall(cueBall);view.setGameMode(gameMode);breakRails=[[],[]];lastHUDTurn=0;hudPrevScores=[null,null];hudPrevTurn=null;buildMatch();$('#gameMode').value=gameMode;}
   const byKey=new Map(world.balls.map(b=>[ballSnapshotKey(b),b]));
   for(const sb of snapshot.balls||[]){const b=byKey.get(sb.key);if(!b)continue;b.position.set(+sb.x||0,+sb.z||0);b.velocity.set(+sb.vx||0,+sb.vz||0);if(Array.isArray(sb.w))for(let i=0;i<3;i++)b.angularVelocity[i]=+sb.w[i]||0;if(Array.isArray(sb.q)&&sb.q.length===4)for(let i=0;i<4;i++)b.orientation[i]=+sb.q[i]||0;b.potted=!!sb.potted;b.offTable=!!sb.offTable;b.inHand=!!sb.inHand;b.sleeping=!!sb.sleeping;b.motionState=sb.motionState||'rest';b.fall=+sb.fall||0;b.pocketDrop=null;b.sleepTimer=0;}
   const ms=snapshot.match||{};
@@ -78,12 +86,12 @@ function applyOnlineSnapshot(snapshot,{quiet=false}={}){
   if(ms.breakShot!=null)match.breakShot=!!ms.breakShot;if(ms.openTable!=null)match.openTable=!!ms.openTable;
   match.frameWinner=ms.frameWinner??null;match.shotActive=false;match.pendingCueScratch=false;match.tracker?.cancel?.();
   const liveCue=match.cueBall?.();if(liveCue){cueBall=liveCue;cue.setCueBall(liveCue);}
-  world.accumulator=0;wasMoving=false;cueScratchLatched=false;
+  world.accumulator=0;world.syncRenderState?.();view.syncVisuals?.();wasMoving=false;cueScratchLatched=false;
   if(onlineMode&&onlineSeat===match.turn)restoreLocalOnlineCue();
   if(!quiet){renderHUD();view.render();}
 }
 function startOnlineShot(msg){
-  applyOnlineSnapshot(msg.start,{quiet:true});onlinePendingShot=false;onlineAnimating=true;onlineStreamActive=true;view.setPullback(0);onlineAimPullback=0;
+  applyOnlineSnapshot(msg.start,{quiet:true});onlinePendingShot=false;onlineAnimating=true;onlineStreamActive=true;onlineRemoteAimTarget=null;onlineRemotePullback=0;view.setExternalMotion?.(true);view.syncVisuals?.();view.setPullback(0);onlineAimPullback=0;
   const sh=msg.shot||{};cue.angle=+sh.angle||0;cue.power=clamp(+sh.power||.45,.02,1);cue.spinX=clamp(+sh.spinX||0,-1,1);cue.spinY=clamp(+sh.spinY||0,-1,1);syncSpinUI();
   shotClock=performance.now();const P=cue.power;
   const ok=view.playCueStroke(P,()=>{audio.cueStrike(P);haptic(12);});
@@ -100,15 +108,15 @@ function handleOnlineMessage(msg){
   if(msg.type==='room_ready'){
     onlineMode=true;onlineReady=true;onlineRoomCode=msg.code||onlineRoomCode;applyOnlineSnapshot(msg.snapshot);$('#onlinePanel').classList.remove('open');$('#modeHub').classList.remove('show');updateNetworkBadge('LIVE');showVersus();showStatus(onlineSeat===match.turn?'YOUR BREAK':'FRIEND BREAK',1000);return;
   }
-  if(msg.type==='peer_left'){onlineReady=false;onlineAnimating=false;onlineStreamActive=false;onlinePendingShot=false;if(msg.snapshot)applyOnlineSnapshot(msg.snapshot);showStatus('FRIEND DISCONNECTED',2500,'foul');$('#onlinePanel').classList.add('open');$('#onlineWaiting').textContent='FRIEND DISCONNECTED · ROOM STILL OPEN';return;}
+  if(msg.type==='peer_left'){onlineReady=false;onlineAnimating=false;onlineStreamActive=false;onlinePendingShot=false;onlineRemoteAimTarget=null;view.setExternalMotion?.(false);if(msg.snapshot)applyOnlineSnapshot(msg.snapshot);showStatus('FRIEND DISCONNECTED',2500,'foul');$('#onlinePanel').classList.add('open');$('#onlineWaiting').textContent='FRIEND DISCONNECTED · ROOM STILL OPEN';return;}
   if(msg.type==='opponent_aim'){
     if(!onlineMode||msg.seat===onlineSeat||msg.seat!==match?.turn||onlineAnimating)return;
-    const a=msg.aim||{};cue.angle=Number.isFinite(+a.angle)?+a.angle:cue.angle;cue.power=clamp(+a.power||.45,.02,1);cue.spinX=clamp(+a.spinX||0,-1,1);cue.spinY=clamp(+a.spinY||0,-1,1);view.setPullback(clamp(+a.pullback||0,0,1));syncSpinUI();view.render();return;
+    const a=msg.aim||{};onlineRemoteAimTarget={angle:Number.isFinite(+a.angle)?+a.angle:cue.angle,power:clamp(+a.power||.45,.02,1),spinX:clamp(+a.spinX||0,-1,1),spinY:clamp(+a.spinY||0,-1,1),pullback:clamp(+a.pullback||0,0,1)};return;
   }
   if(msg.type==='shot_start'){startOnlineShot(msg);return;}
   if(msg.type==='shot_frame'){applyOnlineMotionFrame(msg);return;}
   if(msg.type==='state_sync'){
-    onlineAnimating=false;onlineStreamActive=false;onlinePendingShot=false;view.setPullback(0);onlineAimPullback=0;applyOnlineSnapshot(msg.snapshot);
+    onlineAnimating=false;onlineStreamActive=false;onlinePendingShot=false;onlineRemoteAimTarget=null;onlineRemotePullback=0;view.setExternalMotion?.(false);view.setPullback(0);onlineAimPullback=0;applyOnlineSnapshot(msg.snapshot);
     if(msg.reason==='shot_result'){onlineResultMessage(msg.result);if(msg.snapshot?.match?.stage==='over')showResultPanel(msg.snapshot,msg.result?.reason||'');}
     if(msg.reason==='cue_placed')showStatus(onlineSeat===match.turn?'CUE BALL PLACED':'FRIEND PLACED CUE BALL',800);
     if(msg.reason==='rematch'){hideResultPanel();showVersus();showStatus('REMATCH STARTED',900);}
@@ -118,7 +126,7 @@ function handleOnlineMessage(msg){
 }
 async function createOnlineRoom(){const name=($('#onlineName').value||'Player 1').trim();const mode=$('#onlineGameMode').value;$('#onlineWaiting').textContent='CREATING ROOM…';try{await online.createRoom({mode,name});}catch(e){showStatus('COULD NOT CONNECT TO SERVER',1800,'foul');$('#onlineWaiting').textContent='CONNECTION FAILED';}}
 async function joinOnlineRoom(){const name=($('#onlineName').value||'Player').trim(),code=($('#onlineJoinCode').value||'').trim().toUpperCase();if(code.length<4){showStatus('ENTER ROOM CODE',1000,'foul');return;}$('#onlineWaiting').textContent='JOINING ROOM…';try{await online.joinRoom({code,name});}catch(e){showStatus('COULD NOT CONNECT TO SERVER',1800,'foul');$('#onlineWaiting').textContent='CONNECTION FAILED';}}
-function leaveOnline(){online.leave();onlineMode=false;onlineReady=false;onlineAnimating=false;onlineStreamActive=false;onlinePendingShot=false;onlineSeat=null;onlineRoomCode='';hideResultPanel();$('#onlinePanel').classList.remove('open');$('#matchMode').value='ai';aiMode=true;startMode(gameMode,{showHub:true});updateNetworkBadge('OFFLINE');}
+function leaveOnline(){online.leave();onlineMode=false;onlineReady=false;onlineAnimating=false;onlineStreamActive=false;onlinePendingShot=false;onlineRemoteAimTarget=null;view.setExternalMotion?.(false);onlineSeat=null;onlineRoomCode='';hideResultPanel();$('#onlinePanel').classList.remove('open');$('#matchMode').value='ai';aiMode=true;startMode(gameMode,{showHub:true});updateNetworkBadge('OFFLINE');}
 
 function renderHUD(state=match?.state?.()){
   if(!state)return;const aiTurn=!onlineMode&&!!ai?.isAITurn(match),humanTurn=humanOwnsTurn();
@@ -126,7 +134,7 @@ function renderHUD(state=match?.state?.()){
   if(aiTurn&&!lastAITurn)humanCue={spinX:cue.spinX,spinY:cue.spinY,power:cue.power};
   if(!aiTurn&&lastAITurn){cue.spinX=humanCue.spinX;cue.spinY=humanCue.spinY;cue.power=humanCue.power;syncSpinUI();}
   lastAITurn=aiTurn;
-  $('#p1Name').textContent=state.players[0].name;$('#p2Name').textContent=state.players[1].name;$('#p1Score').textContent=state.players[0].score;$('#p2Score').textContent=state.players[1].score;
+  $('#p1Name').textContent=state.players[0].name;$('#p2Name').textContent=state.players[1].name;$('#p1Score').textContent=state.players[0].score;$('#p2Score').textContent=state.players[1].score;if(hudPrevScores[0]!=null&&hudPrevScores[0]!==state.players[0].score)animateClass($('#p1Score'),'score-pop');if(hudPrevScores[1]!=null&&hudPrevScores[1]!==state.players[1].score)animateClass($('#p2Score'),'score-pop');hudPrevScores=[state.players[0].score,state.players[1].score];if(hudPrevTurn!=null&&hudPrevTurn!==state.turn){animateClass(state.turn===0?$('#leftPlayer'):$('#rightPlayer'),'turn-enter');}hudPrevTurn=state.turn;
   $('#p1Break').textContent=isPool()?(state.players[0].group?state.players[0].group.toUpperCase():`POTS ${state.players[0].break}`):`BREAK ${state.players[0].break}`;
   $('#p2Break').textContent=isPool()?(state.players[1].group?state.players[1].group.toUpperCase():`POTS ${state.players[1].break}`):`BREAK ${state.players[1].break}`;
   renderRail($('#p1Rail'),breakRails[0]);renderRail($('#p2Rail'),breakRails[1]);
@@ -167,7 +175,7 @@ function buildMatch(){
   wireMatch();
 }
 function rackBalls(){if(gameMode==='8ball')return createEightBallBalls(world);if(gameMode==='9ball')return createNineBallBalls(world);return createStandardBalls(world);}
-function startMode(mode,{showHub=false}={}){hideResultPanel();gameMode=['snooker','8ball','9ball'].includes(mode)?mode:'snooker';cueScratchLatched=false;cueRecoveryHoldUntil=0;cueBall=rackBalls();cue.setCueBall(cueBall);cue.angle=0;cue.spinX=cue.spinY=0;cue.power=humanCue.power||.45;view.setGameMode(gameMode);breakRails=[[],[]];lastHUDTurn=0;buildMatch();syncSpinUI();resetPowerControl();$('#gameMode').value=gameMode;renderHUD();if(showHub)$('#modeHub').classList.add('show');else $('#modeHub').classList.remove('show');showVersus();view.render();}
+function startMode(mode,{showHub=false}={}){hideResultPanel();gameMode=['snooker','8ball','9ball'].includes(mode)?mode:'snooker';cueScratchLatched=false;cueRecoveryHoldUntil=0;cueBall=rackBalls();cue.setCueBall(cueBall);cue.angle=0;cue.spinX=cue.spinY=0;cue.power=humanCue.power||.45;view.setGameMode(gameMode);breakRails=[[],[]];lastHUDTurn=0;hudPrevScores=[null,null];hudPrevTurn=null;buildMatch();syncSpinUI();resetPowerControl();$('#gameMode').value=gameMode;renderHUD();if(showHub)$('#modeHub').classList.add('show');else $('#modeHub').classList.remove('show');showVersus();view.render();}
 function resetRack(){if(onlineMode){showStatus('ONLINE RACK IS SERVER CONTROLLED',1200);return;}startMode(gameMode);}
 
 function attemptStrike(){audio.unlock();if(onlineMode){if(!humanOwnsTurn()){showStatus('WAIT FOR YOUR TURN',900);return false;}if(isBallInHand()){showStatus('PLACE THE CUE BALL',1200,'foul');return false;}if(!canHumanAim())return false;sendOnlineAim(0,true);onlinePendingShot=true;const clientShotId=`${Date.now().toString(36)}-${++onlineShotSeq}`;if(!online.shot({angle:cue.angle,power:cue.power,spinX:cue.spinX,spinY:cue.spinY,clientShotId})){onlinePendingShot=false;showStatus('NOT CONNECTED',1200,'foul');return false;}showStatus('SHOT SENT',650);renderHUD();return true;}if(ai?.isAITurn(match)){showStatus('WAIT FOR YOUR TURN',900);return false;}if(isBallInHand()){showStatus('PLACE THE CUE BALL',1200,'foul');return false;}if(!canHumanAim())return false;if(!match.beginShot())return false;shotClock=performance.now();const P=cue.power;const started=view.playCueStroke(P,()=>{audio.cueStrike(P);haptic(12);if(!cue.strike(P))match.cancelShot();});if(started===false){match.cancelShot();return false;}return true;}
@@ -229,6 +237,13 @@ if(new URLSearchParams(location.search).has('debug')){
   };
 }
 
+function updateRemoteAim(dt){
+  if(!onlineRemoteAimTarget||!onlineMode||onlineAnimating||onlineSeat===match?.turn)return;
+  const t=onlineRemoteAimTarget,k=1-Math.exp(-clamp(dt,0,.05)*28),oldSpinX=cue.spinX,oldSpinY=cue.spinY;
+  cue.angle+=angleDelta(t.angle,cue.angle)*k;cue.power+= (t.power-cue.power)*k;cue.spinX+=(t.spinX-cue.spinX)*k;cue.spinY+=(t.spinY-cue.spinY)*k;onlineRemotePullback+=(t.pullback-onlineRemotePullback)*k;view.setPullback(onlineRemotePullback);
+  if(Math.abs(cue.spinX-oldSpinX)+Math.abs(cue.spinY-oldSpinY)>.001)syncSpinUI();
+}
+
 function finalizeSettledShot(now){
   const result=match.finishShot();
   // A real pocket/off-table event is latched independently from the rules
@@ -246,8 +261,8 @@ function finalizeSettledShot(now){
   return result;
 }
 
-let last=performance.now();function loop(now){const dt=(now-last)/1000;last=now;if(!(onlineMode&&onlineAnimating&&onlineStreamActive))world.update(dt);audio.updateRolling(world);const moving=!world.allStopped();
+let last=performance.now();function loop(now){const dt=clamp((now-last)/1000,0,.05);last=now;updateRemoteAim(dt);if(!(onlineMode&&onlineAnimating&&onlineStreamActive))world.update(dt);audio.updateRolling(world);const moving=!world.allStopped();
   // Independent safety net: a latched physical scratch must always own a
   // visible protected cue body, even before rules finish adjudicating.
   if(cueScratchLatched&&match?.shotActive&&!isBallInHand())match.stageCueScratch?.();
-  if(match.shotActive&&!moving&&!view.isStrokeAnimating()&&(wasMoving||now-shotClock>600)){if(!onlineMode)finalizeSettledShot(now);}wasMoving=moving;if(isBallInHand()&&!moving){match.ensureCueBallInHandVisible?.();const liveCue=match.cueBall?.();if(liveCue){liveCue.potted=false;liveCue.offTable=false;liveCue.inHand=true;if(cue.cueBall!==liveCue)cue.setCueBall(liveCue);}}if(!onlineMode&&now>=cueRecoveryHoldUntil)ai.tick(now,match);view.render();requestAnimationFrame(loop);}requestAnimationFrame(loop);
+  if(match.shotActive&&!moving&&!view.isStrokeAnimating()&&(wasMoving||now-shotClock>600)){if(!onlineMode)finalizeSettledShot(now);}wasMoving=moving;if(isBallInHand()&&!moving){match.ensureCueBallInHandVisible?.();const liveCue=match.cueBall?.();if(liveCue){liveCue.potted=false;liveCue.offTable=false;liveCue.inHand=true;if(cue.cueBall!==liveCue)cue.setCueBall(liveCue);}}if(!onlineMode&&now>=cueRecoveryHoldUntil)ai.tick(now,match);view.render(now);requestAnimationFrame(loop);}requestAnimationFrame(loop);

@@ -32,7 +32,7 @@ wss.on('connection',ws=>{send(ws,{type:'hello',protocol:1});ws.isAlive=true;ws.o
     const r=room.simulateShot(seat,m);if(!r.ok)return send(ws,{type:'action_rejected',action:'shot',message:r.error,clientShotId:m.clientShotId||null});
     const impactDelayMs=205,tailMs=150,visualMs=impactDelayMs+r.durationMs+tailMs;
     room.animating=true;room.animatingUntil=Date.now()+visualMs;
-    room.broadcast({type:'shot_start',seat,shot:r.shot,clientShotId:r.clientShotId,start:r.start,durationMs:visualMs,impactDelayMs,streamHz:30});
+    room.broadcast({type:'shot_start',seat,shot:r.shot,clientShotId:r.clientShotId,start:r.start,durationMs:visualMs,impactDelayMs,streamHz:40});
     const frames=r.motionFrames||[];let fi=0;const started=Date.now();
     const motionTimer=setInterval(()=>{
       if(!rooms.has(room.code)){clearInterval(motionTimer);return;}
@@ -40,7 +40,7 @@ wss.on('connection',ws=>{send(ws,{type:'hello',protocol:1});ws.isAlive=true;ws.o
       while(fi<frames.length&&frames[fi].tMs<=t){latest=frames[fi++];}
       if(latest)room.broadcast({type:'shot_frame',seat,clientShotId:r.clientShotId,tMs:latest.tMs,balls:latest.balls});
       if(fi>=frames.length)clearInterval(motionTimer);
-    },25);
+    },20);
     setTimeout(()=>{if(!rooms.has(room.code))return;clearInterval(motionTimer);room.animating=false;room.animatingUntil=0;room.broadcast({type:'state_sync',reason:'shot_result',result:r.result,snapshot:r.final,clientShotId:r.clientShotId});},visualMs);return;
   }
   if(m.type==='rematch'){room.rematchVotes.add(seat);room.broadcast({type:'rematch_vote',seat});if(room.rematchVotes.size===2){const snapshot=room.reset();room.broadcast({type:'state_sync',reason:'rematch',snapshot});}return;}

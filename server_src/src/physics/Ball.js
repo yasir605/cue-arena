@@ -10,6 +10,10 @@ export class Ball {
     this.potted=false;this.offTable=false;this.inHand=false;this.fall=0;this.sleeping=true;this.sleepTimer=0;this.lastCollision=0;
     this.kind=null;this.value=0;this.spotName=null;this.offTable=false;
     this.motionState='rest';this.slipSpeed=0;
+    // Presentation interpolation state. Physics remains authoritative at the
+    // fixed timestep; the renderer blends from this previous solved state to
+    // the current one so 60/90/120/144 Hz displays do not show duplicate steps.
+    this._renderPrevX=x;this._renderPrevZ=z;this._renderPrevFall=0;this._renderPrevQ=[0,0,0,1];
   }
   wake(){this.sleeping=false;this.sleepTimer=0;if(this.motionState==='rest')this.motionState='rolling';}
   speedSq(){return this.velocity.x*this.velocity.x+this.velocity.y*this.velocity.y;}
