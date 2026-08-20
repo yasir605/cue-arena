@@ -134,7 +134,7 @@ function renderHUD(state=match?.state?.()){
   if(aiTurn&&!lastAITurn)humanCue={spinX:cue.spinX,spinY:cue.spinY,power:cue.power};
   if(!aiTurn&&lastAITurn){cue.spinX=humanCue.spinX;cue.spinY=humanCue.spinY;cue.power=humanCue.power;syncSpinUI();}
   lastAITurn=aiTurn;
-  $('#p1Name').textContent=state.players[0].name;$('#p2Name').textContent=state.players[1].name;$('#p1Score').textContent=state.players[0].score;$('#p2Score').textContent=state.players[1].score;if(hudPrevScores[0]!=null&&hudPrevScores[0]!==state.players[0].score)animateClass($('#p1Score'),'score-pop');if(hudPrevScores[1]!=null&&hudPrevScores[1]!==state.players[1].score)animateClass($('#p2Score'),'score-pop');hudPrevScores=[state.players[0].score,state.players[1].score];if(hudPrevTurn!=null&&hudPrevTurn!==state.turn){animateClass(state.turn===0?$('#leftPlayer'):$('#rightPlayer'),'turn-enter');}hudPrevTurn=state.turn;
+  $('#p1Name').textContent=state.players[0].name;$('#p2Name').textContent=state.players[1].name;$('#p1Score').textContent=state.players[0].score;$('#p2Score').textContent=state.players[1].score;if(hudPrevScores[0]!=null&&hudPrevScores[0]!==state.players[0].score)animateClass($('#p1Score'),'score-pop');if(hudPrevScores[1]!=null&&hudPrevScores[1]!==state.players[1].score)animateClass($('#p2Score'),'score-pop');hudPrevScores=[state.players[0].score,state.players[1].score];if(hudPrevTurn!=null&&hudPrevTurn!==state.turn){animateClass(state.turn===0?$('#leftPlayer'):$('#rightPlayer'),'turn-enter');audio.turn();}hudPrevTurn=state.turn;
   $('#p1Break').textContent=isPool()?(state.players[0].group?state.players[0].group.toUpperCase():`POTS ${state.players[0].break}`):`BREAK ${state.players[0].break}`;
   $('#p2Break').textContent=isPool()?(state.players[1].group?state.players[1].group.toUpperCase():`POTS ${state.players[1].break}`):`BREAK ${state.players[1].break}`;
   renderRail($('#p1Rail'),breakRails[0]);renderRail($('#p2Rail'),breakRails[1]);
@@ -162,7 +162,7 @@ function wireMatch(){
     audio.pocket(b);view.notifyPocket(b);haptic(b.name==='Cue'?30:15);
     if(cueScratch){match.stageCueScratch?.();const liveCue=match.cueBall?.();if(liveCue){liveCue.inHand=true;cue.setCueBall(liveCue);}renderHUD();view.render();}
   };
-  world.onOffTable=b=>{const cueScratch=b?.kind==='cue'||b?.name==='Cue';if(cueScratch)cueScratchLatched=true;match.recordOffTable(b);if(cueScratch){match.stageCueScratch?.();const liveCue=match.cueBall?.();if(liveCue){liveCue.inHand=true;cue.setCueBall(liveCue);}renderHUD();view.render();}};
+  world.onOffTable=b=>{audio.offTable();const cueScratch=b?.kind==='cue'||b?.name==='Cue';if(cueScratch)cueScratchLatched=true;match.recordOffTable(b);if(cueScratch){match.stageCueScratch?.();const liveCue=match.cueBall?.();if(liveCue){liveCue.inHand=true;cue.setCueBall(liveCue);}renderHUD();view.render();}};
 }
 
 function buildMatch(){

@@ -1,0 +1,11 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+const audio=fs.readFileSync(new URL('../src/audio/AudioEngine.js',import.meta.url),'utf8');
+const main=fs.readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
+const html=fs.readFileSync(new URL('../web/index.html',import.meta.url),'utf8');
+for(const token of ['this.volume=3','Math.min(3','createDynamicsCompressor','this.compressor.threshold.value=-18','this.limiter.threshold.value=-3','cueStrike(power=.5)','ballCollision(impulse=.1)','cushion(impulse=.1)','pocket(ball)','offTable()','foul()','score(value=1)','turn()','frameWin()','updateRolling(world)'])assert.ok(audio.includes(token),`missing premium audio contract: ${token}`);
+assert.match(html,/id="soundVolume"[^>]*max="300"[^>]*value="300"/,'volume control must expose 0–300% and default to 300%');
+assert.match(html,/game\.js\?v=5\.6\.0-audio/,'deployed game bundle must be cache-busted for v5.6 audio');
+assert.match(main,/audio\.turn\(\)/,'turn transition must have audio feedback');
+assert.match(main,/world\.onOffTable=b=>\{audio\.offTable\(\)/,'off-table event must have premium impact feedback');
+console.log('PASS v5.6 300% master, compressor/limiter, layered premium SFX, and event audio contracts');

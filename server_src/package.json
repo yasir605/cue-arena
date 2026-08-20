@@ -1,6 +1,6 @@
 {
   "name": "cue-arena-online-server",
-  "version": "5.5.0",
+  "version": "5.6.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -10,7 +10,7 @@
     "build": "node tools/build_bundle.mjs",
     "start": "node server.js",
     "dev": "node server.js",
-    "test": "npm run build && node --check web/game.js && node tests/authority_tests.mjs && node tests/v51_tests.mjs && node tests/v53_tests.mjs && node tests/v54_tests.mjs && node tests/v55_tests.mjs"
+    "test": "npm run build && node --check web/game.js && node tests/authority_tests.mjs && node tests/v51_tests.mjs && node tests/v53_tests.mjs && node tests/v54_tests.mjs && node tests/v55_tests.mjs && node tests/v56_tests.mjs"
   },
   "dependencies": {
     "ws": "8.21.3"
