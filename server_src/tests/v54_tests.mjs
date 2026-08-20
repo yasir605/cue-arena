@@ -1,0 +1,17 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+const main=fs.readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
+const renderer=fs.readFileSync(new URL('../src/render/Renderer2D.js',import.meta.url),'utf8');
+const html=fs.readFileSync(new URL('../web/index.html',import.meta.url),'utf8');
+const css=fs.readFileSync(new URL('../web/styles.css',import.meta.url),'utf8');
+assert.match(html,/id="mobileAimWheel"/);
+assert.match(main,/MOBILE_DEVICE/);
+assert.match(main,/mobileAimWheel/);
+assert.match(main,/cue\.angle-=da\*\.065/);
+assert.match(css,/online-panel\.open\{display:block;overflow-y:auto/);
+assert.match(css,/body\.mobile-ui \.aim-wheel\{display:none!important\}/);
+assert.match(css,/body\.mobile-ui \.mobile-aim-wheel\{/);
+assert.match(renderer,/#staticBase\(/);
+assert.match(renderer,/this\.mobileOptimized\?1\.25:2/);
+assert.match(main,/The rAF loop owns rendering/);
+console.log('PASS v5.4 mobile scroll, dedicated aim wheel, and renderer performance contracts');
