@@ -43,7 +43,7 @@ export const POOL_TABLE = Object.freeze({
 // (metres, seconds, kilograms) and are shared by live play, AI and aim preview.
 export const PHYSICS = {
   fixedDt: 1 / 120,
-  maxSubsteps: 12,
+  maxSubsteps: 18,
   gravity: 9.81,
 
   ballRestitution: 0.94,
@@ -81,6 +81,8 @@ export const PHYSICS = {
 
 export const CUE_PHYSICS = {
   maxCueSpeed: 7.0,
+  // v5.1: preserve touch-shot control while adding 45% more speed at full power.
+  fullPowerBoost: 0.45,
   maxTipOffset: 0.72,
   maxSquirtDegrees: 1.8,
   extremeSpinSpeedLoss: 0.10,

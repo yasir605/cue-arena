@@ -18,8 +18,11 @@ export class CueController {
     // Fine control in the first half, with progressively more acceleration in
     // the upper range.  Extreme tip offsets lose a little translational speed.
     const curve=0.075*p+0.925*Math.pow(p,2.12);
+    // Keep delicate shots close to the existing calibration, then progressively
+    // add the requested arcade-pool punch in the top end. At 100% this is +45%.
+    const topEndBoost=1+(CUE_PHYSICS.fullPowerBoost||0)*Math.pow(p,3.2);
     const offset=Math.min(1,Math.hypot(this.spinX,this.spinY));
-    return this.maxCueSpeed*curve*(1-CUE_PHYSICS.extremeSpinSpeedLoss*offset*offset);
+    return this.maxCueSpeed*curve*topEndBoost*(1-CUE_PHYSICS.extremeSpinSpeedLoss*offset*offset);
   }
   effectiveShotAngle(power=this.power){
     const p=Math.max(0,Math.min(1,power));

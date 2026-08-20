@@ -15,14 +15,20 @@ export function geometryFor(table=TABLE){
   const middleAngle=(table.middlePocketCutAngle??(pool?76:68))*DEG;
   const cornerShelf=Math.max(table.cornerPocketShelf??R*1.15,R*.72);
   const middleShelf=Math.max(table.middlePocketShelf??R*.35,R*.18);
+  const cornerJawLength=Math.max(R*1.72,cornerLipInset*.62);
+  const middleJawLength=Math.max(R*1.55,middleHalf*.70);
+  // v5.1: explicit physical depth of the pocket/jaw envelope. Earlier builds
+  // referenced geometry.jawDepth without ever defining it, disabling the
+  // extreme-escape guard and allowing grounded balls to leave the table.
+  const jawDepth=Math.max(R*2.75,cornerJawLength*.92,middleJawLength*.92,cornerShelf+R*1.15);
   return Object.freeze({
     pool,
     cornerMouth,middleMouth,middleHalf,cornerLipInset,
-    cornerAngle,middleAngle,cornerShelf,middleShelf,
+    cornerAngle,middleAngle,cornerShelf,middleShelf,jawDepth,
     // Facing lengths stop before opposite jaws cross. The pocket liner takes
     // over behind them, just as it does on a real table.
-    cornerJawLength:Math.max(R*1.72,cornerLipInset*.62),
-    middleJawLength:Math.max(R*1.55,middleHalf*.70),
+    cornerJawLength,
+    middleJawLength,
     guardMargin:Math.max(0.0014,R*.05),
     captureMargin:Math.max(.0010,R*.035),
   });

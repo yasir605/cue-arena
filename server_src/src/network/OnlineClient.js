@@ -31,6 +31,7 @@ export class OnlineClient {
   async createRoom({mode,name}){await this.connect();this.send('create_room',{mode,name});}
   async joinRoom({code,name}){await this.connect();this.send('join_room',{code:String(code||'').trim().toUpperCase(),name});}
   leave(){this.send('leave_room');this.roomCode='';this.seat=null;this.ready=false;}
+  aim({angle,power,spinX,spinY,pullback}){return this.send('aim',{angle,power,spinX,spinY,pullback});}
   shot({angle,power,spinX,spinY,clientShotId}){return this.send('shot',{angle,power,spinX,spinY,clientShotId});}
   placeCue({x,z,preview=false}){return this.send(preview?'place_preview':'place_cue',{x,z});}
   rematch(){return this.send('rematch');}

@@ -14,6 +14,7 @@ function makeRack(world,mode){if(mode==='8ball')return createEightBallBalls(worl
 
 function ballKey(b){return b.number!=null?`n:${b.number}`:`name:${b.name}`;}
 function serializeBall(b){return{key:ballKey(b),name:b.name,number:b.number??null,kind:b.kind,poolGroup:b.poolGroup??null,color:b.color,x:b.position.x,z:b.position.y,vx:b.velocity.x,vz:b.velocity.y,w:[...b.angularVelocity],q:[...b.orientation],potted:!!b.potted,offTable:!!b.offTable,inHand:!!b.inHand,sleeping:!!b.sleeping,motionState:b.motionState,fall:b.fall||0};}
+function serializeMotionBall(b){return[ballKey(b),b.position.x,b.position.y,b.velocity.x,b.velocity.y,b.orientation[0],b.orientation[1],b.orientation[2],b.orientation[3],b.potted?1:0,b.fall||0,b.inHand?1:0];}
 
 export class GameRoom {
   constructor(code,mode='snooker'){
@@ -26,6 +27,7 @@ export class GameRoom {
   addPlayer(ws,name){const seat=this.players[0]?this.players[1]? -1:1:0;if(seat<0)return -1;this.players[seat]={ws,name:(String(name||`Player ${seat+1}`).trim().slice(0,18)||`Player ${seat+1}`),id:randomUUID()};this.setNames();return seat;}
   remove(ws){const seat=this.seatFor(ws);if(seat>=0)this.players[seat]=null;return seat;}
   broadcast(msg){const data=JSON.stringify(msg);for(const p of this.players)if(p?.ws?.readyState===1)p.ws.send(data);}
+  broadcastExcept(ws,msg){const data=JSON.stringify(msg);for(const p of this.players)if(p?.ws!==ws&&p?.ws?.readyState===1)p.ws.send(data);}
   snapshot(){return{seq:this.seq,code:this.code,mode:this.mode,ready:this.ready(),match:{...this.match.state(),expected:this.match.expected,clearanceIndex:this.match.clearanceIndex,breakShot:this.match.breakShot,openTable:this.match.openTable,players:this.match.players.map(p=>({...p}))},balls:this.world.balls.map(serializeBall)};}
   reset(){this.world.clear();this.cueBall=makeRack(this.world,this.mode);this.cue.setCueBall(this.cueBall);this.match=this.mode==='snooker'?new MatchController(this.world):new PoolMatchController(this.world,{mode:this.mode});this.setNames();this.seq++;this.rematchVotes.clear();this.#wire();return this.snapshot();}
   canSeatAct(seat){return this.ready()&&!this.animating&&seat===this.match.turn&&this.match.stage!=='over';}
@@ -42,8 +44,15 @@ export class GameRoom {
     this.cue.angle=angle;this.cue.power=power;this.cue.spinX=spinX;this.cue.spinY=spinY;
     if(!this.cue.strike(power)){this.match.cancelShot();return{ok:false,error:'Cue strike failed.'};}
     let steps=0,maxSteps=Math.ceil(18/PHYSICS.fixedDt),everMoving=false;
-    while(steps<maxSteps){this.world.step(PHYSICS.fixedDt);steps++;if(!this.world.allStopped())everMoving=true;if(everMoving&&this.world.allStopped()&&steps>12)break;}
+    const motionFrames=[],sampleEvery=4; // authoritative ~30 Hz motion stream
+    while(steps<maxSteps){
+      this.world.step(PHYSICS.fixedDt);steps++;
+      if(!this.world.allStopped())everMoving=true;
+      if(steps%sampleEvery===0)motionFrames.push({tMs:Math.round(steps*PHYSICS.fixedDt*1000),balls:this.world.balls.map(serializeMotionBall)});
+      if(everMoving&&this.world.allStopped()&&steps>12)break;
+    }
+    if(!motionFrames.length||motionFrames.at(-1).tMs<Math.round(steps*PHYSICS.fixedDt*1000))motionFrames.push({tMs:Math.round(steps*PHYSICS.fixedDt*1000),balls:this.world.balls.map(serializeMotionBall)});
     const result=this.match.finishShot();this.match.ensureCueBallInHandVisible?.();this.seq++;const final=this.snapshot();
-    const durationMs=clamp(Math.round(steps*PHYSICS.fixedDt*1000),450,9000);this.lastResult={result,final,durationMs,shot:{angle,power,spinX,spinY},clientShotId:shot.clientShotId||null};return{ok:true,start,final,result,durationMs,shot:this.lastResult.shot,clientShotId:this.lastResult.clientShotId};
+    const durationMs=clamp(Math.round(steps*PHYSICS.fixedDt*1000),450,9000);this.lastResult={result,final,durationMs,shot:{angle,power,spinX,spinY},clientShotId:shot.clientShotId||null};return{ok:true,start,final,result,durationMs,motionFrames,shot:this.lastResult.shot,clientShotId:this.lastResult.clientShotId};
   }
 }

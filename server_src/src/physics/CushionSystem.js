@@ -81,6 +81,22 @@ export class CushionSystem{
     return hit;
   }
 
+  forceContain(ball){
+    // This simulator has no jump/airborne mechanic, so a grounded ball can
+    // never legitimately leave the table. If numerical error gets a centre
+    // beyond the pocket/jaw envelope without a valid pocket entry, recover it
+    // to the nearest playable edge and reflect the escaping velocity.
+    if(ball.potted||pocketEntered(ball,this.table,this.geometry))return false;
+    const shelf=pocketShelfInfo(ball,this.table,this.geometry);
+    if(shelf&&shelf.depth>0&&Math.abs(shelf.lateral)<shelf.captureHalf+ball.radius*.2)return false;
+    const T=this.table,R=ball.radius,hx=T.width/2,hz=T.length/2,limX=hx-R,limZ=hz-R;
+    const ex=Math.max(0,Math.abs(ball.position.x)-hx),ez=Math.max(0,Math.abs(ball.position.y)-hz);
+    if(ex<=0&&ez<=0)return false;
+    if(ex>=ez){const sx=Math.sign(ball.position.x)||1;ball.position.x=sx*limX;this.#bounce(ball,-sx,0);}
+    else{const sz=Math.sign(ball.position.y)||1;ball.position.y=sz*limZ;this.#bounce(ball,0,-sz);}
+    ball.offTable=false;ball.potted=false;ball.motionState='sliding';ball.wake();return true;
+  }
+
   solve(ball){
     if(ball.potted)return false;
     const hitSegments=this.#solveSegments(ball);

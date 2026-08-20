@@ -80,8 +80,11 @@ export class PhysicsWorld {
       const T=this.table||TABLE;const offX=Math.abs(b.position.x)>T.width/2+0.22;
       const offZ=Math.abs(b.position.y)>T.length/2+0.22;
       if(offX||offZ){
-        b.offTable=true;b.potted=true;b.velocity.set(0,0);b.angularVelocity[0]=b.angularVelocity[1]=b.angularVelocity[2]=0;b.sleeping=true;b.motionState='rest';
-        if(this.onOffTable)this.onOffTable(b);continue;
+        // Normal cue-sport play in this top-down model has no airborne balls.
+        // Crossing the outer pocket envelope is therefore a numerical escape,
+        // not a legitimate off-table foul. Recover it instead of awarding a foul.
+        if(this.cushions.forceContain?.(b))continue;
+        b.offTable=false;
       }
       if(b.sleeping)continue;
       const slip=contactSlip(b);b.slipSpeed=slip.speed;
