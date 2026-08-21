@@ -49,9 +49,20 @@ export const PHYSICS = {
   ballRestitution: 0.94,
   ballFriction: 0.045,
 
-  cushionRestitution: 0.82,
-  cushionRestitutionFast: 0.85,
-  cushionFriction: 0.17,
+  // v5.8 monotonic cushion response. Low-speed impacts lose proportionally
+  // more normal speed, so the rebound opens a few degrees. As speed rises the
+  // response approaches a specular reflection instead of crossing friction
+  // regimes and wandering back and forth with power.
+  cushionRestitution: 0.74,
+  cushionRestitutionFast: 0.89,
+  cushionFriction: 0.18,
+  cushionResponseLowSpeed: 0.35,
+  cushionResponseHighSpeed: 7.0,
+  cushionLowSpeedAngleRatio: 1.105,
+  cushionFastAngleRatio: 1.0,
+  cushionSpinTransferSlow: 0.18,
+  cushionSpinTransferFast: 0.07,
+  cushionSpinDeflectCap: 0.20,
 
   slideFriction: 0.205,
   rollingResistance: 0.0105,
