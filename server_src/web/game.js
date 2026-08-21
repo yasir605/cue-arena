@@ -1297,8 +1297,8 @@ class Renderer2D{
   screenToWorld(clientX,clientY){const r=this.canvas.getBoundingClientRect(),sx=clientX-r.left,sy=clientY-r.top,L=this.lastLayout||this.#layout(r.width,r.height);return{x:(L.cy-sy)/L.scale,z:(sx-L.cx)/L.scale};}
   #screenDir(d){return{x:d.y,y:-d.x};}
   #tableGeometry(){const T=this.world.table||TABLE;if(this._tableCache!==T){this._tableCache=T;this._cachedPockets=buildPockets(T);this._cachedCushions=buildCushionSegments(T);this._cachedGeom=geometryFor(T);}return{T,pockets:this._cachedPockets,cushions:this._cachedCushions,geom:this._cachedGeom};}
-  #rayFirstBall(){const cb=this.cue.cueBall;if(!cb||cb.potted)return null;const d=this.cue.direction(),px=cb.position.x,pz=cb.position.y;let best=null,tBest=Infinity;for(const b of this.world.balls){if(b===cb||b.potted)continue;const ox=px-b.position.x,oz=pz-b.position.y,R=cb.radius+b.radius,B=2*(ox*d.x+oz*d.y),C=ox*ox+oz*oz-R*R,disc=B*B-4*C;if(disc<0)continue;const q=Math.sqrt(disc),t1=(-B-q)/2,t2=(-B+q)/2,t=t1>.001?t1:t2>.001?t2:Infinity;if(t<tBest){tBest=t;best={ball:b,t};}}return best;}
-  #rayFirstCushion(){const cb=this.cue.cueBall;if(!cb||cb.potted)return null;const d=this.cue.direction(),px=cb.position.x,pz=cb.position.y,R=cb.radius;let best=null,tBest=Infinity;for(const sg of this.#tableGeometry().cushions){const s0=(px-sg.ax)*sg.nx+(pz-sg.az)*sg.nz,den=d.x*sg.nx+d.y*sg.nz;if(den< -1e-9){const t=(R-s0)/den;if(t>.001&&t<tBest){const ix=px+d.x*t,iz=pz+d.y*t,u=sg.lenSq>0?((ix-sg.ax)*sg.dx+(iz-sg.az)*sg.dz)/sg.lenSq:0;if(u>=0&&u<=1){best={segment:sg,t};tBest=t;}}}for(const [ex,ez] of [[sg.ax,sg.az],[sg.bx,sg.bz]]){const ox=px-ex,oz=pz-ez,B=2*(ox*d.x+oz*d.y),C=ox*ox+oz*oz-R*R,disc=B*B-4*C;if(disc<0)continue;const q=Math.sqrt(disc),t1=(-B-q)/2,t2=(-B+q)/2,t=t1>.001?t1:t2>.001?t2:Infinity;if(t>=tBest||!Number.isFinite(t))continue;const ix=px+d.x*t,iz=pz+d.y*t,nx=(ix-ex)/R,nz=(iz-ez)/R;if(nx*sg.nx+nz*sg.nz<-.12)continue;best={segment:sg,t};tBest=t;}}return best;}
+  #rayFirstBall(direction=null){const cb=this.cue.cueBall;if(!cb||cb.potted)return null;const d=direction||this.cue.direction(),px=cb.position.x,pz=cb.position.y;let best=null,tBest=Infinity;for(const b of this.world.balls){if(b===cb||b.potted)continue;const ox=px-b.position.x,oz=pz-b.position.y,R=cb.radius+b.radius,B=2*(ox*d.x+oz*d.y),C=ox*ox+oz*oz-R*R,disc=B*B-4*C;if(disc<0)continue;const q=Math.sqrt(disc),t1=(-B-q)/2,t2=(-B+q)/2,t=t1>.001?t1:t2>.001?t2:Infinity;if(t<tBest){tBest=t;best={ball:b,t};}}return best;}
+  #rayFirstCushion(direction=null){const cb=this.cue.cueBall;if(!cb||cb.potted)return null;const d=direction||this.cue.direction(),px=cb.position.x,pz=cb.position.y,R=cb.radius;let best=null,tBest=Infinity;for(const sg of this.#tableGeometry().cushions){const s0=(px-sg.ax)*sg.nx+(pz-sg.az)*sg.nz,den=d.x*sg.nx+d.y*sg.nz;if(den< -1e-9){const t=(R-s0)/den;if(t>.001&&t<tBest){const ix=px+d.x*t,iz=pz+d.y*t,u=sg.lenSq>0?((ix-sg.ax)*sg.dx+(iz-sg.az)*sg.dz)/sg.lenSq:0;if(u>=0&&u<=1){best={segment:sg,t};tBest=t;}}}for(const [ex,ez] of [[sg.ax,sg.az],[sg.bx,sg.bz]]){const ox=px-ex,oz=pz-ez,B=2*(ox*d.x+oz*d.y),C=ox*ox+oz*oz-R*R,disc=B*B-4*C;if(disc<0)continue;const q=Math.sqrt(disc),t1=(-B-q)/2,t2=(-B+q)/2,t=t1>.001?t1:t2>.001?t2:Infinity;if(t>=tBest||!Number.isFinite(t))continue;const ix=px+d.x*t,iz=pz+d.y*t,nx=(ix-ex)/R,nz=(iz-ez)/R;if(nx*sg.nx+nz*sg.nz<-.12)continue;best={segment:sg,t};tBest=t;}}return best;}
   #rayBounds(x,z,d,r){const T=this.world.table||TABLE,hx=T.width/2-r,hz=T.length/2-r;let t=Infinity;if(Math.abs(d.x)>1e-9)for(const v of [(hx-x)/d.x,(-hx-x)/d.x])if(v>0)t=Math.min(t,v);if(Math.abs(d.y)>1e-9)for(const v of [(hz-z)/d.y,(-hz-z)/d.y])if(v>0)t=Math.min(t,v);return Number.isFinite(t)?t:1;}
   #cueBackClearance(){const cb=this.cue.cueBall;if(!cb)return 1.55;const d=this.cue.direction(),bx=-d.x,bz=-d.y;let best=1.55;for(const b of this.world.balls){if(b===cb||b.potted)continue;const rx=b.position.x-cb.position.x,rz=b.position.y-cb.position.y,t=rx*bx+rz*bz;if(t<=0)continue;const perp=Math.abs(rx*bz-rz*bx),shaftClear=b.radius+.012;if(perp>=shaftClear)continue;const halfChord=Math.sqrt(Math.max(0,shaftClear*shaftClear-perp*perp));const enter=t-halfChord-.010;best=Math.min(best,Math.max(0.004,enter));}return best;}
   #pattern(name,size,paint){let p=this._patternCache.get(name);if(p)return p;const q=document.createElement('canvas');q.width=q.height=size;const x=q.getContext('2d');paint(x,size);p=this.ctx.createPattern(q,'repeat');this._patternCache.set(name,p);return p;}
@@ -1377,8 +1377,13 @@ class Renderer2D{
   }
   #guideCue(c,L,off=0){
     const b=this.cue.cueBall;if(!b||b.potted||!this.world.allStopped()||this.ballInHand||this.aiThinking)return;
-    const d=this.cue.direction(),sd=this.#screenDir(d),p=this.worldToScreen(b.position.x,b.position.y),r=b.radius*L.scale;
-    const hit=this.#rayFirstBall(),cushionHit=this.#rayFirstCushion(),bound=cushionHit?.t??this.#rayBounds(b.position.x,b.position.y,d,b.radius);
+    // Guide from the exact launch angle used by CueController.strike().
+    // Side spin can introduce squirt, so the raw cue angle is not always the
+    // actual cue-ball launch angle. Pro Aim already uses effectiveShotAngle().
+    const cueD=this.cue.direction(),sdCue=this.#screenDir(cueD);
+    const effectiveAngle=typeof this.cue.effectiveShotAngle==='function'?this.cue.effectiveShotAngle(this.cue.power):this.cue.angle;
+    const d=this.cue.direction(effectiveAngle),sd=this.#screenDir(d),p=this.worldToScreen(b.position.x,b.position.y),r=b.radius*L.scale;
+    const hit=this.#rayFirstBall(d),cushionHit=this.#rayFirstCushion(d),bound=cushionHit?.t??this.#rayBounds(b.position.x,b.position.y,d,b.radius);
     const ballFirst=!!hit&&hit.t<=bound+.0015,len=ballFirst?hit.t:bound;
     const start={x:p.x+sd.x*r*1.06,y:p.y+sd.y*r*1.06},end={x:p.x+sd.x*len*L.scale,y:p.y+sd.y*len*L.scale};
     c.save();c.lineCap='round';
@@ -1404,18 +1409,18 @@ class Renderer2D{
     }
     c.restore();
 
-    const tipGap=r+7+off,clearWorld=this.#cueBackClearance(),maxCueLen=L.cloth.w*.48,availablePx=Math.max(0,clearWorld*L.scale-tipGap-3),cueLen=Math.min(maxCueLen,availablePx),tipX=p.x-sd.x*tipGap,tipY=p.y-sd.y*tipGap,buttX=tipX-sd.x*cueLen,buttY=tipY-sd.y*cueLen;
+    const tipGap=r+7+off,clearWorld=this.#cueBackClearance(),maxCueLen=L.cloth.w*.48,availablePx=Math.max(0,clearWorld*L.scale-tipGap-3),cueLen=Math.min(maxCueLen,availablePx),tipX=p.x-sdCue.x*tipGap,tipY=p.y-sdCue.y*tipGap,buttX=tipX-sdCue.x*cueLen,buttY=tipY-sdCue.y*cueLen;
     c.save();c.lineCap='round';
     // Cue shadow.
     c.strokeStyle='rgba(0,0,0,.58)';c.lineWidth=11;c.beginPath();c.moveTo(tipX+2.8,tipY+3.6);c.lineTo(buttX+2.8,buttY+3.6);c.stroke();
     // Main shaft / butt material.
     const g=c.createLinearGradient(tipX,tipY,buttX,buttY);g.addColorStop(0,'#f4e4b5');g.addColorStop(.34,'#d8b46b');g.addColorStop(.355,'#f8fbff');g.addColorStop(.385,'#90a7b8');g.addColorStop(.41,'#d8f4ff');g.addColorStop(.44,'#5bd3ef');g.addColorStop(.51,'#0e6e9c');g.addColorStop(.59,'#e8bd43');g.addColorStop(.64,'#5b2d16');g.addColorStop(.74,'#9a4426');g.addColorStop(.88,'#241631');g.addColorStop(1,'#080b16');c.strokeStyle=g;c.lineWidth=7.3;c.beginPath();c.moveTo(tipX,tipY);c.lineTo(buttX,buttY);c.stroke();
     // Clear-coat highlight along cue length.
-    c.strokeStyle='rgba(255,255,255,.44)';c.lineWidth=1.15;c.beginPath();c.moveTo(tipX-sd.y*1.3,tipY+sd.x*1.3);c.lineTo(buttX-sd.y*1.3,buttY+sd.x*1.3);c.stroke();
+    c.strokeStyle='rgba(255,255,255,.44)';c.lineWidth=1.15;c.beginPath();c.moveTo(tipX-sdCue.y*1.3,tipY+sdCue.x*1.3);c.lineTo(buttX-sdCue.y*1.3,buttY+sdCue.x*1.3);c.stroke();
     // Ferrule + chalked tip.
-    const ferr=8;c.strokeStyle='#fff4d9';c.lineWidth=7.7;c.beginPath();c.moveTo(tipX,tipY);c.lineTo(tipX-sd.x*ferr,tipY-sd.y*ferr);c.stroke();c.strokeStyle='#55c9e6';c.lineWidth=7.9;c.beginPath();c.moveTo(tipX+sd.x*.7,tipY+sd.y*.7);c.lineTo(tipX+sd.x*3.2,tipY+sd.y*3.2);c.stroke();
+    const ferr=8;c.strokeStyle='#fff4d9';c.lineWidth=7.7;c.beginPath();c.moveTo(tipX,tipY);c.lineTo(tipX-sdCue.x*ferr,tipY-sdCue.y*ferr);c.stroke();c.strokeStyle='#55c9e6';c.lineWidth=7.9;c.beginPath();c.moveTo(tipX+sdCue.x*.7,tipY+sdCue.y*.7);c.lineTo(tipX+sdCue.x*3.2,tipY+sdCue.y*3.2);c.stroke();
     // Joint rings and wrapped butt bands.
-    const ring=(t,col,w=1.6)=>{const x=tipX+(buttX-tipX)*t,y=tipY+(buttY-tipY)*t,nx=-sd.y,ny=sd.x;c.strokeStyle=col;c.lineWidth=w;c.beginPath();c.moveTo(x-nx*4.2,y-ny*4.2);c.lineTo(x+nx*4.2,y+ny*4.2);c.stroke();};ring(.36,'rgba(255,255,255,.95)',2);ring(.405,'rgba(23,33,42,.9)',1.8);ring(.59,'#f7d467',2);ring(.64,'rgba(255,255,255,.65)',1.3);for(let t=.77;t<.95;t+=.035)ring(t,t%0.07<.035?'rgba(181,81,52,.8)':'rgba(30,17,35,.78)',1.05);c.restore();
+    const ring=(t,col,w=1.6)=>{const x=tipX+(buttX-tipX)*t,y=tipY+(buttY-tipY)*t,nx=-sdCue.y,ny=sdCue.x;c.strokeStyle=col;c.lineWidth=w;c.beginPath();c.moveTo(x-nx*4.2,y-ny*4.2);c.lineTo(x+nx*4.2,y+ny*4.2);c.stroke();};ring(.36,'rgba(255,255,255,.95)',2);ring(.405,'rgba(23,33,42,.9)',1.8);ring(.59,'#f7d467',2);ring(.64,'rgba(255,255,255,.65)',1.3);for(let t=.77;t<.95;t+=.035)ring(t,t%0.07<.035?'rgba(181,81,52,.8)':'rgba(30,17,35,.78)',1.05);c.restore();
   }
   #proAim(c,L){
     if(!this.proAimEnabled||!this.proAimAllowed||this.ballInHand||this.aiThinking||!this.world.allStopped()||this.stroke)return;
@@ -1554,7 +1559,7 @@ Object.assign(exports,{ProAimPredictor});
 };
 
 __modules["src/audio/AudioEngine.js"]=function(require,module,exports){
-// Cue Arena v5.7 browser-native audio engine.
+// Cue Arena v5.7.1 browser-native audio engine.
 // All SFX are synthesized into AudioBuffers in the browser on first user gesture.
 // No sound assets are fetched and no server message is required to trigger local SFX.
 class AudioEngine {
@@ -1576,7 +1581,7 @@ class AudioEngine {
         const low=this.ctx.createBiquadFilter();low.type='lowshelf';low.frequency.value=128;low.gain.value=3.4;
         const body=this.ctx.createBiquadFilter();body.type='peaking';body.frequency.value=620;body.Q.value=.72;body.gain.value=1.35;
         const presence=this.ctx.createBiquadFilter();presence.type='peaking';presence.frequency.value=2850;presence.Q.value=.78;presence.gain.value=2.8;
-        const air=this.ctx.createBiquadFilter();air.type='highshelf';air.frequency.value=6100;air.gain.value=1.7;
+        const air=this.ctx.createBiquadFilter();air.type='highshelf';air.frequency.value=6100;air.gain.value=.65;
         this.master=this.ctx.createGain();this.master.gain.value=this.enabled?this.volume:0;
         this.softClip=this.ctx.createWaveShaper();this.softClip.oversample='4x';this.softClip.curve=this.#softClipCurve(32768,1.55);
         this.compressor=this.ctx.createDynamicsCompressor();
@@ -1587,7 +1592,7 @@ class AudioEngine {
         this.input.connect(hp);hp.connect(low);low.connect(body);body.connect(presence);presence.connect(air);air.connect(this.master);this.master.connect(this.softClip);this.softClip.connect(this.compressor);this.compressor.connect(this.limiter);this.limiter.connect(this.output);this.output.connect(this.ctx.destination);
         this.#buildRoom();
         this.#buildBank();
-        this.#startRollingBed();
+        // Continuous rolling noise intentionally disabled: it sounded like air/wind.
       }
       if(this.ctx.state==='suspended')this.ctx.resume();
       this.unlocked=true;
@@ -1656,7 +1661,9 @@ class AudioEngine {
   }
   #pick(group){const a=this.bank?.[group];if(!Array.isArray(a)||!a.length)return null;this.variant=(this.variant+1)%9973;return a[this.variant%a.length];}
   #startRollingBed(){
-    if(!this.bank?.roll||this.rollSource)return;const src=this.ctx.createBufferSource(),filter=this.ctx.createBiquadFilter(),gain=this.ctx.createGain();src.buffer=this.bank.roll;src.loop=true;filter.type='bandpass';filter.frequency.value=520;filter.Q.value=.55;gain.gain.value=0;src.connect(filter);filter.connect(gain);this.#route(gain,0,.01);src.start();this.rollSource=src;this.rollFilter=filter;this.rollGain=gain;
+    // Disabled in v5.7.1. A looped broadband texture reads as wind/air on
+    // phone and laptop speakers. Keep the shot bed silent between impacts.
+    this.rollSource=null;this.rollFilter=null;this.rollGain=null;
   }
   ui(){this.unlock();const pan=(Math.random()-.5)*.12;this.#sample(this.#pick('ui'),{gain:.045,rate:.98+Math.random()*.06,pan,reverb:.018});}
   cueStrike(power=.5){
@@ -1689,9 +1696,8 @@ class AudioEngine {
   frameWin(){this.unlock();[392,494,587,784].forEach((f,i)=>{this.#tone({freq:f,duration:.3,gain:.06,type:'sine',attack:.002,delay:i*.078,pan:(i-1.5)*.08,reverb:.16});this.#tone({freq:f*2,duration:.18,gain:.018,type:'triangle',attack:.001,delay:i*.078+.018,pan:(1.5-i)*.06,reverb:.13});});this.#noise({duration:.3,gain:.018,cutoff:4800,filterType:'highpass',q:.3,delay:.16,reverb:.18});}
   frameLose(){this.unlock();this.#tone({freq:294,freqEnd:220,duration:.25,gain:.055,type:'triangle',attack:.002,reverb:.11});this.#tone({freq:196,freqEnd:147,duration:.36,gain:.063,type:'sine',attack:.002,delay:.11,reverb:.13});}
   updateRolling(world){
-    if(!this.ctx||!this.enabled||!this.rollGain||!this.rollFilter)return;let max=0,moving=0,energy=0;for(const b of world.balls)if(!b.potted){const s=b.speed();max=Math.max(max,s);if(s>.06){moving++;energy+=Math.min(1,s/3.2);}}
-    const k=Math.min(1,max/3.6),density=Math.min(1,moving/10),target=max>.055?(.004+.022*k+.006*density)*Math.min(1.15,.55+energy*.22):.00001;
-    const t=this.ctx.currentTime;this.rollGain.gain.setTargetAtTime(target,t,.032);this.rollFilter.frequency.setTargetAtTime(360+1040*k,t,.04);this.rollFilter.Q.setTargetAtTime(.48+.16*k,t,.05);
+    // No continuous broadband rolling layer: removes the reported air/wind hiss.
+    if(this.rollGain&&this.ctx)this.rollGain.gain.setTargetAtTime(0,this.ctx.currentTime,.015);
   }
 }
 

@@ -1,0 +1,11 @@
+import fs from 'node:fs';import assert from 'node:assert/strict';
+const renderer=fs.readFileSync(new URL('../src/render/Renderer2D.js',import.meta.url),'utf8');
+const audio=fs.readFileSync(new URL('../src/audio/AudioEngine.js',import.meta.url),'utf8');
+const html=fs.readFileSync(new URL('../web/index.html',import.meta.url),'utf8');
+assert.match(renderer,/effectiveShotAngle\(this\.cue\.power\)/,'normal guide must use the real effective launch angle');
+assert.match(renderer,/#rayFirstBall\(d\)/,'ball guide must raycast with effective direction');
+assert.match(renderer,/#rayFirstCushion\(d\)/,'cushion guide must raycast with effective direction');
+assert.match(audio,/No continuous broadband rolling layer/,'continuous wind-like rolling layer must be disabled');
+assert.doesNotMatch(audio,/src\.loop=true/,'no continuous looped noise source may run during shots');
+assert.match(html,/game\.js\?v=5\.7\.1-aim-audio-fix/,'deployed bundle must cache-bust v5.7.1');
+console.log('PASS v5.7.1 aim alignment and clean shot audio');

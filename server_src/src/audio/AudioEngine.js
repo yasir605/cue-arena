@@ -1,4 +1,4 @@
-// Cue Arena v5.7 browser-native audio engine.
+// Cue Arena v5.7.1 browser-native audio engine.
 // All SFX are synthesized into AudioBuffers in the browser on first user gesture.
 // No sound assets are fetched and no server message is required to trigger local SFX.
 export class AudioEngine {
@@ -20,7 +20,7 @@ export class AudioEngine {
         const low=this.ctx.createBiquadFilter();low.type='lowshelf';low.frequency.value=128;low.gain.value=3.4;
         const body=this.ctx.createBiquadFilter();body.type='peaking';body.frequency.value=620;body.Q.value=.72;body.gain.value=1.35;
         const presence=this.ctx.createBiquadFilter();presence.type='peaking';presence.frequency.value=2850;presence.Q.value=.78;presence.gain.value=2.8;
-        const air=this.ctx.createBiquadFilter();air.type='highshelf';air.frequency.value=6100;air.gain.value=1.7;
+        const air=this.ctx.createBiquadFilter();air.type='highshelf';air.frequency.value=6100;air.gain.value=.65;
         this.master=this.ctx.createGain();this.master.gain.value=this.enabled?this.volume:0;
         this.softClip=this.ctx.createWaveShaper();this.softClip.oversample='4x';this.softClip.curve=this.#softClipCurve(32768,1.55);
         this.compressor=this.ctx.createDynamicsCompressor();
@@ -31,7 +31,7 @@ export class AudioEngine {
         this.input.connect(hp);hp.connect(low);low.connect(body);body.connect(presence);presence.connect(air);air.connect(this.master);this.master.connect(this.softClip);this.softClip.connect(this.compressor);this.compressor.connect(this.limiter);this.limiter.connect(this.output);this.output.connect(this.ctx.destination);
         this.#buildRoom();
         this.#buildBank();
-        this.#startRollingBed();
+        // Continuous rolling noise intentionally disabled: it sounded like air/wind.
       }
       if(this.ctx.state==='suspended')this.ctx.resume();
       this.unlocked=true;
@@ -100,7 +100,9 @@ export class AudioEngine {
   }
   #pick(group){const a=this.bank?.[group];if(!Array.isArray(a)||!a.length)return null;this.variant=(this.variant+1)%9973;return a[this.variant%a.length];}
   #startRollingBed(){
-    if(!this.bank?.roll||this.rollSource)return;const src=this.ctx.createBufferSource(),filter=this.ctx.createBiquadFilter(),gain=this.ctx.createGain();src.buffer=this.bank.roll;src.loop=true;filter.type='bandpass';filter.frequency.value=520;filter.Q.value=.55;gain.gain.value=0;src.connect(filter);filter.connect(gain);this.#route(gain,0,.01);src.start();this.rollSource=src;this.rollFilter=filter;this.rollGain=gain;
+    // Disabled in v5.7.1. A looped broadband texture reads as wind/air on
+    // phone and laptop speakers. Keep the shot bed silent between impacts.
+    this.rollSource=null;this.rollFilter=null;this.rollGain=null;
   }
   ui(){this.unlock();const pan=(Math.random()-.5)*.12;this.#sample(this.#pick('ui'),{gain:.045,rate:.98+Math.random()*.06,pan,reverb:.018});}
   cueStrike(power=.5){
@@ -133,8 +135,7 @@ export class AudioEngine {
   frameWin(){this.unlock();[392,494,587,784].forEach((f,i)=>{this.#tone({freq:f,duration:.3,gain:.06,type:'sine',attack:.002,delay:i*.078,pan:(i-1.5)*.08,reverb:.16});this.#tone({freq:f*2,duration:.18,gain:.018,type:'triangle',attack:.001,delay:i*.078+.018,pan:(1.5-i)*.06,reverb:.13});});this.#noise({duration:.3,gain:.018,cutoff:4800,filterType:'highpass',q:.3,delay:.16,reverb:.18});}
   frameLose(){this.unlock();this.#tone({freq:294,freqEnd:220,duration:.25,gain:.055,type:'triangle',attack:.002,reverb:.11});this.#tone({freq:196,freqEnd:147,duration:.36,gain:.063,type:'sine',attack:.002,delay:.11,reverb:.13});}
   updateRolling(world){
-    if(!this.ctx||!this.enabled||!this.rollGain||!this.rollFilter)return;let max=0,moving=0,energy=0;for(const b of world.balls)if(!b.potted){const s=b.speed();max=Math.max(max,s);if(s>.06){moving++;energy+=Math.min(1,s/3.2);}}
-    const k=Math.min(1,max/3.6),density=Math.min(1,moving/10),target=max>.055?(.004+.022*k+.006*density)*Math.min(1.15,.55+energy*.22):.00001;
-    const t=this.ctx.currentTime;this.rollGain.gain.setTargetAtTime(target,t,.032);this.rollFilter.frequency.setTargetAtTime(360+1040*k,t,.04);this.rollFilter.Q.setTargetAtTime(.48+.16*k,t,.05);
+    // No continuous broadband rolling layer: removes the reported air/wind hiss.
+    if(this.rollGain&&this.ctx)this.rollGain.gain.setTargetAtTime(0,this.ctx.currentTime,.015);
   }
 }
