@@ -1,0 +1,16 @@
+import fs from 'node:fs';import assert from 'node:assert/strict';
+const html=fs.readFileSync(new URL('../web/index.html',import.meta.url),'utf8');
+const audio=fs.readFileSync(new URL('../src/audio/AudioEngine.js',import.meta.url),'utf8');
+const main=fs.readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
+assert.match(html,/id="soundVolume"[^>]*max="420"[^>]*value="420"/,'volume control must expose 0–420% and default to 420%');
+assert.match(html,/game\.js\?v=5\.7\.0-studio-audio/,'deployed bundle must be cache-busted for v5.7');
+assert.match(audio,/this\.volume=4\.2/,'master gain must be 4.2x (+40% over v5.6 3x)');
+assert.match(audio,/#buildBank\(\)/,'browser must construct its own SFX sample bank');
+assert.match(audio,/createBuffer\(/,'SFX must use browser-native generated AudioBuffers');
+assert.doesNotMatch(audio,/fetch\(|XMLHttpRequest|new Audio\(/,'audio engine must not fetch media or use server-hosted audio elements');
+assert.match(audio,/latencyHint:'interactive'/,'AudioContext must request interactive low latency');
+assert.match(audio,/oversample='4x'/,'master soft clipper must use oversampling');
+assert.match(audio,/#startRollingBed\(\)/,'rolling cloth must use a continuous browser audio bed');
+assert.match(main,/onlineLocalCueAudioId=clientShotId;audio\.cueStrike\(cue\.power\)/,'local online cue strike must fire immediately after browser websocket enqueue, before server acknowledgement');
+assert.match(main,/if\(!localInstant\)audio\.cueStrike\(P\)/,'server shot_start must not duplicate the locally-triggered cue sound');
+console.log('PASS v5.7 studio browser-native SFX, 420% gain, local zero-network-wait cue audio, and cache contracts');
