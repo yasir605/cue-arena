@@ -1,13 +1,46 @@
 export class InputController {
   constructor(canvas,cue,view,ui,onStrike,onPlaceCue,onMoveCue=null){
     this.canvas=canvas;this.cue=cue;this.view=view;this.ui=ui||{};this.onStrike=onStrike;this.onPlaceCue=onPlaceCue;this.onMoveCue=onMoveCue;
-    this.dragging=false;this.placing=false;this.pointerId=null;this.lastX=0;this.lastY=0;this.lastPlacement=null;
+    this.dragging=false;this.placing=false;this.pointerId=null;this.pointerType='mouse';this.lastX=0;this.lastY=0;this.downX=0;this.downY=0;this.downTime=0;this.gestureMoved=false;this.mouseDragActive=false;this.lastPlacement=null;
     const canAim=()=>this.cue.world.allStopped()&&(this.ui.canAim?.()??true);
+    const thresholdFor=t=>t==='touch'?10:t==='pen'?7:4;
+    const clearGesture=()=>{this.dragging=false;this.placing=false;this.pointerId=null;this.gestureMoved=false;this.mouseDragActive=false;};
     canvas.addEventListener('contextmenu',e=>e.preventDefault());
-    canvas.addEventListener('pointerdown',e=>{if(this.ui.ballInHand?.()){e.preventDefault?.();this.dragging=false;this.placing=true;this.pointerId=e.pointerId;canvas.setPointerCapture?.(e.pointerId);this.#movePlacement(e);return;}if(!canAim())return;this.dragging=true;this.pointerId=e.pointerId;this.lastX=e.clientX;this.lastY=e.clientY;canvas.setPointerCapture?.(e.pointerId);this.#aimAtEvent(e,false);});
-    canvas.addEventListener('pointermove',e=>{if(this.placing&&e.pointerId===this.pointerId){this.#movePlacement(e);return;}if(!this.dragging||e.pointerId!==this.pointerId||!canAim())return;if(e.shiftKey){const dx=e.clientX-this.lastX;this.cue.angle-=dx*0.00045;this.ui.onAimChanged?.();}else this.#aimAtEvent(e,true);this.lastX=e.clientX;this.lastY=e.clientY;});
-    const end=e=>{if(this.placing&&e.pointerId===this.pointerId){e.preventDefault?.();const p=this.view.screenToWorld(e.clientX,e.clientY),r=this.onPlaceCue?.(p);if(r?.ok===false){const q=this.lastPlacement||p;this.view.setPlacementPreview?.({x:q.x,z:q.z,valid:false});}else{this.lastPlacement=null;this.view.clearPlacementPreview?.();this.ui.onPlacementCommitted?.(r);}}else if(this.dragging&&canAim())this.#aimAtEvent(e,false);this.dragging=false;this.placing=false;this.pointerId=null;this.view.fadeAimPointer?.();try{if(e?.pointerId!=null&&canvas.hasPointerCapture?.(e.pointerId))canvas.releasePointerCapture(e.pointerId);}catch(_){}};
-    canvas.addEventListener('pointerup',end);canvas.addEventListener('pointercancel',()=>{this.dragging=false;this.placing=false;this.pointerId=null;this.view.clearPlacementPreview?.();this.view.fadeAimPointer?.();});
+    canvas.addEventListener('pointerdown',e=>{
+      if(this.ui.ballInHand?.()){e.preventDefault?.();this.dragging=false;this.placing=true;this.pointerId=e.pointerId;canvas.setPointerCapture?.(e.pointerId);this.#movePlacement(e);return;}
+      if(!canAim())return;
+      // v5.8.1: touching the table is NOT an aim command. A coarse aim is
+      // committed only after a completed tap/click. This removes the old
+      // pointer-down snap that made tiny accidental touches redirect the cue.
+      this.dragging=true;this.pointerId=e.pointerId;this.pointerType=e.pointerType||'mouse';this.downX=this.lastX=e.clientX;this.downY=this.lastY=e.clientY;this.downTime=performance.now();this.gestureMoved=false;this.mouseDragActive=false;canvas.setPointerCapture?.(e.pointerId);
+    });
+    canvas.addEventListener('pointermove',e=>{
+      if(this.placing&&e.pointerId===this.pointerId){this.#movePlacement(e);return;}
+      if(!this.dragging||e.pointerId!==this.pointerId||!canAim())return;
+      const total=Math.hypot(e.clientX-this.downX,e.clientY-this.downY),threshold=thresholdFor(this.pointerType);if(total>threshold)this.gestureMoved=true;
+      // Touch/pen is tap-to-aim only. Deliberate mouse dragging is retained
+      // for desktop, but it cannot start until the movement threshold is crossed.
+      if(this.pointerType==='mouse'&&this.gestureMoved){
+        this.mouseDragActive=true;
+        if(e.shiftKey){const dx=e.clientX-this.lastX;this.cue.angle-=dx*0.00030;this.ui.onAimChanged?.();}
+        else this.#aimAtEvent(e,true);
+      }
+      this.lastX=e.clientX;this.lastY=e.clientY;
+    });
+    const end=e=>{
+      if(this.placing&&e.pointerId===this.pointerId){
+        e.preventDefault?.();const p=this.view.screenToWorld(e.clientX,e.clientY),r=this.onPlaceCue?.(p);if(r?.ok===false){const q=this.lastPlacement||p;this.view.setPlacementPreview?.({x:q.x,z:q.z,valid:false});}else{this.lastPlacement=null;this.view.clearPlacementPreview?.();this.ui.onPlacementCommitted?.(r);}
+      }else if(this.dragging&&e.pointerId===this.pointerId&&canAim()){
+        const threshold=thresholdFor(this.pointerType),distance=Math.hypot(e.clientX-this.downX,e.clientY-this.downY),elapsed=performance.now()-this.downTime;
+        const isTap=distance<=threshold&&elapsed<=520;
+        if(isTap)this.#aimAtEvent(e,false);
+        else if(this.pointerType==='mouse'&&this.mouseDragActive&&!e.shiftKey)this.#aimAtEvent(e,false);
+        // A moved/held touch intentionally does nothing: use a real tap for
+        // coarse aim and the precision wheel for controlled angle rotation.
+      }
+      clearGesture();this.view.fadeAimPointer?.();try{if(e?.pointerId!=null&&canvas.hasPointerCapture?.(e.pointerId))canvas.releasePointerCapture(e.pointerId);}catch(_){}
+    };
+    canvas.addEventListener('pointerup',end);canvas.addEventListener('pointercancel',e=>{clearGesture();this.view.clearPlacementPreview?.();this.view.fadeAimPointer?.();try{if(e?.pointerId!=null&&canvas.hasPointerCapture?.(e.pointerId))canvas.releasePointerCapture(e.pointerId);}catch(_){}});
     window.addEventListener('keydown',e=>{const tag=document.activeElement?.tagName;if(tag==='INPUT'||tag==='SELECT'||tag==='TEXTAREA')return;if((e.key==='ArrowLeft'||e.key==='a'||e.key==='A')&&canAim()){e.preventDefault();this.cue.angle+=e.shiftKey?.0022:.010;this.ui.onAimChanged?.();}if((e.key==='ArrowRight'||e.key==='d'||e.key==='D')&&canAim()){e.preventDefault();this.cue.angle-=e.shiftKey?.0022:.010;this.ui.onAimChanged?.();}if(e.key==='Enter'||e.code==='Space'){e.preventDefault();this.onStrike?.();}});
   }
   #aimAtEvent(e,dragging){const p=this.view.screenToWorld(e.clientX,e.clientY),b=this.cue.cueBall;if(!b||b.potted)return;const dx=p.x-b.position.x,dz=p.z-b.position.y;if(Math.hypot(dx,dz)<b.radius*1.6)return;this.cue.angle=Math.atan2(dx,dz);this.view.setAimPointer?.({x:p.x,z:p.z,dragging:!!dragging});this.ui.onAimChanged?.();}

@@ -314,3 +314,26 @@ body.mobile-ui .score.score-pop{animation-duration:.28s}
 body.mobile-ui .online-panel.open .online-card{animation-duration:.22s}
 body.mobile-ui .result-panel.show .result-card{animation-duration:.30s}
 @media(prefers-reduced-motion:reduce){.player-card.turn-enter,.score.score-pop,.online-panel.open .online-card,.result-panel.show .result-card,.versus-intro.show .vs-card,.pot-slot.filled{animation:none!important}.menu-panel,.spin-panel,.toast,.ball-in-hand,.mode-hub{transition-duration:.01ms!important}}
+
+
+/* v5.8.1 — tap-safe precision aiming, 8 Ball Pool-inspired control separation. */
+.aim-wheel{right:12px;bottom:14px;width:84px;height:84px;border-radius:50%;border:1px solid #bfeaff;background:radial-gradient(circle at 50% 50%,#0c1c2c 0 25%,#152d42 26% 43%,#07111c 44% 58%,#6d8ca3 59% 61%,#0a1725 62% 100%);box-shadow:0 4px 0 #02060c,0 11px 26px #000a,inset 0 0 0 3px #020a13,inset 0 0 14px rgba(114,224,255,.18)}
+.aim-wheel:before{content:"";position:absolute;inset:7px;border-radius:50%;background:repeating-conic-gradient(rgba(229,248,255,.92) 0 1deg,transparent 1deg 7.5deg);mask:radial-gradient(circle,transparent 0 76%,#000 77%);-webkit-mask:radial-gradient(circle,transparent 0 76%,#000 77%);opacity:.68;pointer-events:none}
+.aim-wheel:after{inset:12px;border-color:rgba(111,224,255,.32);box-shadow:inset 0 0 12px #0008;pointer-events:none}
+.aim-wheel-disc{width:70px;height:70px;cursor:ew-resize;touch-action:none;border-radius:50%}
+.aim-core{inset:17px;border:1px solid #8db3c8;background:radial-gradient(circle at 36% 30%,#819aaa,#334b5e 42%,#142637 69%,#07101a);box-shadow:inset 0 2px 5px #fff2,0 2px 7px #000a}
+.aim-core:before,.aim-core:after{position:absolute;top:50%;transform:translateY(-52%);font:900 13px/1 Arial;color:#dff9ff;text-shadow:0 0 6px #60ddff;pointer-events:none}
+.aim-core:before{content:"‹";left:4px}.aim-core:after{content:"›";right:4px}
+.aim-core i{top:-13px;height:15px;width:3px;border-radius:2px;background:#c7f8ff;box-shadow:0 0 8px #4de4ff;transform-origin:50% 30px;transition:transform .07s ease-out}
+.aim-wheel-disc:active .aim-core{filter:brightness(1.12)}
+
+body.mobile-ui .mobile-aim-wheel{width:98px;height:98px;right:max(9px,env(safe-area-inset-right));bottom:max(9px,env(safe-area-inset-bottom));filter:drop-shadow(0 8px 12px rgba(0,0,0,.68));cursor:ew-resize}
+body.mobile-ui .mobile-aim-ring{width:94px;height:94px;border:1px solid #c3efff;background:radial-gradient(circle,#18364d 0 24%,#081723 25% 46%,#314e64 47% 52%,#07111b 53% 69%,#182d3e 70%);box-shadow:inset 0 0 0 4px #020912,inset 0 0 16px rgba(99,218,255,.20),0 3px 0 #02070d;overflow:hidden}
+body.mobile-ui .mobile-aim-ring:before{inset:5px;background:repeating-conic-gradient(rgba(235,250,255,.94) 0 1deg,transparent 1deg 7.5deg);mask:radial-gradient(circle,transparent 0 73%,#000 74%);-webkit-mask:radial-gradient(circle,transparent 0 73%,#000 74%);opacity:.72}
+body.mobile-ui .mobile-aim-ring:after{inset:24px;border-color:rgba(140,230,255,.48);background:radial-gradient(circle at 35% 30%,#708ba0,#294256 48%,#0a1925 78%)}
+body.mobile-ui .mobile-aim-rotor{transition:transform .07s ease-out}
+body.mobile-ui .mobile-aim-rotor i{top:5px;width:9px;height:22px;margin-left:-4.5px;border-radius:5px;background:linear-gradient(#f6ffff,#76ebff 48%,#1490b7);box-shadow:0 0 10px rgba(65,225,255,.78),0 2px 4px #000}
+body.mobile-ui .mobile-aim-center{width:10px;height:10px;margin:-5px;background:#d9f9ff;border:1px solid #75dcf5;box-shadow:0 0 9px #5fe4ff}
+body.mobile-ui .mobile-aim-ring b{bottom:25px;font-size:6.5px;letter-spacing:.16em;color:#e9fbff}
+@media(max-height:650px){.aim-wheel{width:72px;height:72px}.aim-wheel-disc{width:60px;height:60px}.aim-core{inset:15px}}
+@media(max-height:520px){body.mobile-ui .mobile-aim-wheel{width:86px;height:86px}body.mobile-ui .mobile-aim-ring{width:82px;height:82px}body.mobile-ui .mobile-aim-ring:after{inset:21px}body.mobile-ui .mobile-aim-ring b{bottom:21px}}
