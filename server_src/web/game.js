@@ -196,31 +196,55 @@ const powerControl=$('#powerControl'),powerFill=$('#powerFill'),powerKnob=$('#po
 function setPowerVisual(v){v=clamp(v,0,1);pulledPower=v;if(pulling){cue.power=Math.max(.02,v);onlineAimPullback=v;sendOnlineAim(v);}const pct=Math.round(v*100);powerFill.style.height=`${pct}%`;powerKnob.style.top=`${pct}%`;powerValue.textContent=pct;view.setPullback(v);}function resetPowerControl(){setPowerVisual(0);view.setPullback(0);}function powerFromEvent(e){const r=$('#powerTrack').getBoundingClientRect();return clamp((e.clientY-r.top)/r.height,0,1);}
 powerControl.addEventListener('pointerdown',e=>{if(!canHumanAim())return;audio.unlock();pulling=true;powerPid=e.pointerId;powerControl.setPointerCapture?.(e.pointerId);setPowerVisual(powerFromEvent(e));});powerControl.addEventListener('pointermove',e=>{if(pulling&&e.pointerId===powerPid)setPowerVisual(powerFromEvent(e));});function releasePower(){if(!pulling)return;pulling=false;cue.power=clamp(pulledPower,.02,1);humanCue.power=cue.power;onlineAimPullback=0;view.setPullback(0);sendOnlineAim(0,true);if(pulledPower>.04&&canHumanAim())attemptStrike();setTimeout(resetPowerControl,75);}powerControl.addEventListener('pointerup',releasePower);powerControl.addEventListener('pointercancel',()=>{pulling=false;resetPowerControl();});
 
-// v5.8.1 precision aim wheel. Both desktop and mobile use the same relative
-// left/right control model: coarse direction comes from a table tap/click, then
-// the wheel makes small deterministic angle changes without ever snapping aim.
+// v5.8.2 vertical precision aiming. Coarse direction still comes only from a
+// completed table tap/click. The dedicated right-side roller is a relative
+// vertical control inspired by pool-game aim wheels: drag UP/DOWN to rotate the
+// cue continuously. Merely touching the roller never changes the shot angle.
 const aimWheel=$('#aimWheel'),aimDisc=$('#aimWheelDisc'),aimNeedle=$('#aimWheelNeedle'),mobileAimWheel=$('#mobileAimWheel'),mobileAimRotor=$('#mobileAimRotor');
-const WHEEL_TAP_NUDGE=.00115; // ~0.066 degrees per left/right tap
-function bindPrecisionAimWheel(el,setVisual){
-  if(!el)return;let active=false,pid=null,startX=0,startY=0,lastX=0,startedAt=0,moved=false,visual=0;
+function bindVerticalAimWheel(el,setVisual){
+  if(!el)return;
+  let active=false,pid=null,startX=0,startY=0,lastY=0,moved=false,visual=0;
   const reset=()=>{active=false;pid=null;moved=false;visual=0;setVisual?.(0);};
-  el.addEventListener('pointerdown',e=>{if(!canHumanAim())return;e.preventDefault();audio.unlock();active=true;pid=e.pointerId;startX=lastX=e.clientX;startY=e.clientY;startedAt=performance.now();moved=false;visual=0;setVisual?.(0);el.setPointerCapture?.(e.pointerId);});
-  el.addEventListener('pointermove',e=>{
-    if(!active||e.pointerId!==pid||!canHumanAim())return;e.preventDefault();const total=Math.hypot(e.clientX-startX,e.clientY-startY),dx=e.clientX-lastX;lastX=e.clientX;if(total<2&&!moved)return;moved=true;
-    // Slow movement gets ultra-fine resolution; quicker swipes gain modestly
-    // so a player can still traverse several degrees without losing precision.
-    const gain=e.shiftKey?.00011:(.00018+Math.min(.00014,Math.abs(dx)*.000012));
-    if(Math.abs(dx)>.01){cue.angle-=dx*gain;visual=clamp(visual+dx*.72,-44,44);setVisual?.(visual);sendOnlineAim(onlineAimPullback);view.render?.();}
+  el.addEventListener('pointerdown',e=>{
+    if(!canHumanAim())return;
+    e.preventDefault();audio.unlock();active=true;pid=e.pointerId;startX=e.clientX;startY=lastY=e.clientY;moved=false;visual=0;setVisual?.(0);
+    el.classList.add('dragging');el.setPointerCapture?.(e.pointerId);
   });
-  const end=e=>{if(!active||(e&&e.pointerId!==pid))return;if(e)e.preventDefault();const elapsed=performance.now()-startedAt,total=e?Math.hypot(e.clientX-startX,e.clientY-startY):999;
-    // A clean tap on either half of the wheel is a single micro-nudge. This
-    // makes thin-cut corrections possible even on small phone screens.
-    if(!moved&&elapsed<=430&&total<=7&&e&&canHumanAim()){const r=el.getBoundingClientRect(),side=e.clientX-(r.left+r.width*.5);if(Math.abs(side)>r.width*.10){cue.angle+=side<0?WHEEL_TAP_NUDGE:-WHEEL_TAP_NUDGE;sendOnlineAim(onlineAimPullback,true);view.render?.();haptic(3);}}
-    try{if(e?.pointerId!=null&&el.hasPointerCapture?.(e.pointerId))el.releasePointerCapture(e.pointerId);}catch(_){}reset();};
-  el.addEventListener('pointerup',end);el.addEventListener('pointercancel',end);
+  el.addEventListener('pointermove',e=>{
+    if(!active||e.pointerId!==pid||!canHumanAim())return;
+    e.preventDefault();
+    const coalesced=e.getCoalescedEvents?.();const samples=coalesced?.length?coalesced:[e];
+    let totalDy=0;
+    for(const sample of samples){const dy=sample.clientY-lastY;lastY=sample.clientY;if(Number.isFinite(dy))totalDy+=dy;}
+    const travel=Math.hypot(e.clientX-startX,e.clientY-startY);
+    if(!moved&&travel<1.5)return;
+    moved=true;
+    if(Math.abs(totalDy)<.01)return;
+    // Slow movement stays highly precise. Faster swipes gain only moderately,
+    // allowing larger corrections without making thin cuts twitchy.
+    const speed=Math.min(12,Math.abs(totalDy));
+    const gain=e.shiftKey?.00012:(.00030+speed*.000010);
+    cue.angle-=totalDy*gain;
+    visual=(visual+totalDy)%18;
+    setVisual?.(visual);
+    sendOnlineAim(onlineAimPullback);
+    view.render?.();
+  });
+  const end=e=>{
+    if(!active||(e&&e.pointerId!==pid))return;
+    e?.preventDefault?.();
+    // No tap-nudge here: touch + release without a drag is intentionally inert.
+    // This prevents the same accidental-aim problem the table input was fixed for.
+    if(moved&&canHumanAim())sendOnlineAim(onlineAimPullback,true);
+    try{if(e?.pointerId!=null&&el.hasPointerCapture?.(e.pointerId))el.releasePointerCapture(e.pointerId);}catch(_){}
+    el.classList.remove('dragging');reset();
+  };
+  el.addEventListener('pointerup',end);
+  el.addEventListener('pointercancel',end);
+  el.addEventListener('lostpointercapture',()=>{if(active){el.classList.remove('dragging');reset();}});
 }
-bindPrecisionAimWheel(aimDisc,v=>{if(aimNeedle)aimNeedle.style.transform=`translateX(-50%) rotate(${v}deg)`;});
-bindPrecisionAimWheel(mobileAimWheel,v=>{if(mobileAimRotor)mobileAimRotor.style.transform=`rotate(${v}deg)`;});
+bindVerticalAimWheel(aimDisc,v=>{aimDisc?.style.setProperty('--aim-roll',`${v}px`);if(aimNeedle)aimNeedle.style.transform='translate(-50%,-50%)';});
+bindVerticalAimWheel(mobileAimWheel,v=>{mobileAimWheel?.style.setProperty('--aim-roll',`${v}px`);if(mobileAimRotor)mobileAimRotor.style.backgroundPosition=`center ${v}px`;});
 
 // Spin.
 const spinPanel=$('#spinPanel'),spinPad=$('#spinPad'),spinDot=$('#spinDot');function setSpinOpen(v){spinPanel.classList.toggle('open',!!v);$('#spinBtn').classList.toggle('active',!!v);}$('#spinBtn').addEventListener('click',()=>{if(!canHumanAim())return;audio.ui();setSpinOpen(!spinPanel.classList.contains('open'));setMenu(false);});function syncSpinUI(){spinDot.style.left=`${50+cue.spinX*39}%`;spinDot.style.top=`${50-cue.spinY*39}%`;$('#spinMiniDot').style.transform=`translate(${cue.spinX*11}px,${-cue.spinY*11}px)`;$('#spinText').textContent=Math.hypot(cue.spinX,cue.spinY)<.05?'CENTER':`${cue.spinY>=0?'FOLLOW':'DRAW'} · SIDE ${Math.round(cue.spinX*100)}`;}function spinEvent(e){const r=spinPad.getBoundingClientRect();let x=(e.clientX-r.left)/r.width*2-1,y=1-(e.clientY-r.top)/r.height*2,l=Math.hypot(x,y);if(l>1){x/=l;y/=l;}cue.spinX=humanCue.spinX=x;cue.spinY=humanCue.spinY=y;syncSpinUI();sendOnlineAim(onlineAimPullback);}spinPad.addEventListener('pointerdown',e=>{spinPad.setPointerCapture?.(e.pointerId);spinEvent(e);});spinPad.addEventListener('pointermove',e=>{if(e.buttons)spinEvent(e);});$('#spinCenter').addEventListener('click',()=>{cue.spinX=cue.spinY=humanCue.spinX=humanCue.spinY=0;syncSpinUI();sendOnlineAim(onlineAimPullback,true);});
@@ -1317,7 +1341,7 @@ class InputController {
     canvas.addEventListener('pointerdown',e=>{
       if(this.ui.ballInHand?.()){e.preventDefault?.();this.dragging=false;this.placing=true;this.pointerId=e.pointerId;canvas.setPointerCapture?.(e.pointerId);this.#movePlacement(e);return;}
       if(!canAim())return;
-      // v5.8.1: touching the table is NOT an aim command. A coarse aim is
+      // v5.8.2: touching the table is NOT an aim command. A coarse aim is
       // committed only after a completed tap/click. This removes the old
       // pointer-down snap that made tiny accidental touches redirect the cue.
       this.dragging=true;this.pointerId=e.pointerId;this.pointerType=e.pointerType||'mouse';this.downX=this.lastX=e.clientX;this.downY=this.lastY=e.clientY;this.downTime=performance.now();this.gestureMoved=false;this.mouseDragActive=false;canvas.setPointerCapture?.(e.pointerId);
@@ -1326,7 +1350,7 @@ class InputController {
       if(this.placing&&e.pointerId===this.pointerId){this.#movePlacement(e);return;}
       if(!this.dragging||e.pointerId!==this.pointerId||!canAim())return;
       const total=Math.hypot(e.clientX-this.downX,e.clientY-this.downY),threshold=thresholdFor(this.pointerType);if(total>threshold)this.gestureMoved=true;
-      // Touch/pen is tap-to-aim only. Deliberate mouse dragging is retained
+      // Touch/pen table input remains tap-to-aim only. Deliberate mouse dragging is retained
       // for desktop, but it cannot start until the movement threshold is crossed.
       if(this.pointerType==='mouse'&&this.gestureMoved){
         this.mouseDragActive=true;
@@ -1344,7 +1368,7 @@ class InputController {
         if(isTap)this.#aimAtEvent(e,false);
         else if(this.pointerType==='mouse'&&this.mouseDragActive&&!e.shiftKey)this.#aimAtEvent(e,false);
         // A moved/held touch intentionally does nothing: use a real tap for
-        // coarse aim and the precision wheel for controlled angle rotation.
+        // coarse aim and the right-side vertical precision roller for controlled angle rotation.
       }
       clearGesture();this.view.fadeAimPointer?.();try{if(e?.pointerId!=null&&canvas.hasPointerCapture?.(e.pointerId))canvas.releasePointerCapture(e.pointerId);}catch(_){}
     };

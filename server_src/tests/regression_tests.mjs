@@ -44,9 +44,9 @@ const read=p=>fs.readFileSync(new URL(p,import.meta.url),'utf8');
 // Mobile and animation contracts.
 {
   const main=read('../src/main.js'),input=read('../src/input/InputController.js'),renderer=read('../src/render/Renderer2D.js'),html=read('../web/index.html'),css=read('../web/styles.css'),room=read('../gameRoom.js'),server=read('../server.js');
-  assert.match(html,/id="mobileAimWheel"/);assert.match(main,/MOBILE_DEVICE/);assert.match(main,/mobileAimWheel/);assert.match(main,/bindPrecisionAimWheel/);assert.match(main,/WHEEL_TAP_NUDGE/);assert.match(main,/cue\.angle-=dx\*gain/);
+  assert.match(html,/id="mobileAimWheel"/);assert.match(main,/MOBILE_DEVICE/);assert.match(main,/mobileAimWheel/);assert.match(main,/bindVerticalAimWheel/);assert.match(main,/cue\.angle-=totalDy\*gain/);assert.doesNotMatch(main,/cue\.angle-=dx\*gain/);assert.match(main,/getCoalescedEvents/);assert.match(main,/coalesced\?\.length\?coalesced:\[e\]/);assert.match(main,/touch \+ release without a drag is intentionally inert/);
   assert.match(input,/touching the table is NOT an aim command/);assert.match(input,/if\(isTap\)this\.#aimAtEvent/);assert.match(input,/this\.pointerType==='mouse'/);
-  assert.match(css,/online-panel\.open\{display:block;overflow-y:auto/);assert.match(css,/body\.mobile-ui \.aim-wheel\{display:none!important\}/);assert.match(css,/body\.mobile-ui \.mobile-aim-wheel\{/);
+  assert.match(css,/online-panel\.open\{display:block;overflow-y:auto/);assert.match(css,/body\.mobile-ui \.aim-wheel\{display:none!important\}/);assert.match(css,/body\.mobile-ui \.mobile-aim-wheel\{/);assert.match(css,/cursor:ns-resize/);assert.match(css,/background-position:center var\(--aim-roll,0px\)/);
   assert.match(renderer,/#staticBase\(/);assert.match(renderer,/this\.mobileOptimized\?1\.25:2/);assert.match(main,/The rAF loop owns rendering/);
   const world=new PhysicsWorld(),ball=world.addBall(new Ball({x:0,z:0}));ball.sleeping=false;ball.velocity.set(1,0);world.accumulator=1/240;world.step(1/120);
   assert.ok(Number.isFinite(ball._renderPrevX));assert.ok(world.renderAlpha()>=0&&world.renderAlpha()<=1);
@@ -62,7 +62,7 @@ const read=p=>fs.readFileSync(new URL(p,import.meta.url),'utf8');
   assert.doesNotMatch(audio,/fetch\(|XMLHttpRequest|new Audio\(/);assert.match(audio,/latencyHint:'interactive'/);assert.match(audio,/oversample='4x'/);
   assert.match(main,/onlineLocalCueAudioId=clientShotId;audio\.cueStrike\(cue\.power\)/);assert.match(main,/if\(!localInstant\)audio\.cueStrike\(P\)/);
   assert.match(audio,/No continuous broadband rolling layer/);assert.doesNotMatch(audio,/src\.loop=true/);
-  assert.match(html,/game\.js\?v=5\.8\.1-precision-aim/);assert.match(html,/styles\.css\?v=5\.8\.1-precision-aim/);
+  assert.match(html,/game\.js\?v=5\.8\.2-vertical-aim/);assert.match(html,/styles\.css\?v=5\.8\.2-vertical-aim/);
 }
 
 console.log('CUE ARENA REGRESSION TESTS: PASS');

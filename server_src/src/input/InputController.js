@@ -9,7 +9,7 @@ export class InputController {
     canvas.addEventListener('pointerdown',e=>{
       if(this.ui.ballInHand?.()){e.preventDefault?.();this.dragging=false;this.placing=true;this.pointerId=e.pointerId;canvas.setPointerCapture?.(e.pointerId);this.#movePlacement(e);return;}
       if(!canAim())return;
-      // v5.8.1: touching the table is NOT an aim command. A coarse aim is
+      // v5.8.2: touching the table is NOT an aim command. A coarse aim is
       // committed only after a completed tap/click. This removes the old
       // pointer-down snap that made tiny accidental touches redirect the cue.
       this.dragging=true;this.pointerId=e.pointerId;this.pointerType=e.pointerType||'mouse';this.downX=this.lastX=e.clientX;this.downY=this.lastY=e.clientY;this.downTime=performance.now();this.gestureMoved=false;this.mouseDragActive=false;canvas.setPointerCapture?.(e.pointerId);
@@ -18,7 +18,7 @@ export class InputController {
       if(this.placing&&e.pointerId===this.pointerId){this.#movePlacement(e);return;}
       if(!this.dragging||e.pointerId!==this.pointerId||!canAim())return;
       const total=Math.hypot(e.clientX-this.downX,e.clientY-this.downY),threshold=thresholdFor(this.pointerType);if(total>threshold)this.gestureMoved=true;
-      // Touch/pen is tap-to-aim only. Deliberate mouse dragging is retained
+      // Touch/pen table input remains tap-to-aim only. Deliberate mouse dragging is retained
       // for desktop, but it cannot start until the movement threshold is crossed.
       if(this.pointerType==='mouse'&&this.gestureMoved){
         this.mouseDragActive=true;
@@ -36,7 +36,7 @@ export class InputController {
         if(isTap)this.#aimAtEvent(e,false);
         else if(this.pointerType==='mouse'&&this.mouseDragActive&&!e.shiftKey)this.#aimAtEvent(e,false);
         // A moved/held touch intentionally does nothing: use a real tap for
-        // coarse aim and the precision wheel for controlled angle rotation.
+        // coarse aim and the right-side vertical precision roller for controlled angle rotation.
       }
       clearGesture();this.view.fadeAimPointer?.();try{if(e?.pointerId!=null&&canvas.hasPointerCapture?.(e.pointerId))canvas.releasePointerCapture(e.pointerId);}catch(_){}
     };
