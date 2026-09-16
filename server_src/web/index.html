@@ -4,8 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
   <meta name="theme-color" content="#070a08" />
-  <title>Cue Arena Online v5.9.2 — Cinematic Landing</title>
-  <link rel="stylesheet" href="styles.css?v=5.9.2-cinematic-r3" />
+  <title>Cue Arena Online v5.10.0 — Championship Night</title>
+  <link rel="stylesheet" href="styles.css?v=5.10.0-championship-r4" />
 </head>
 <body data-mode="snooker">
 <main id="app">
@@ -72,41 +72,21 @@
   </aside>
 
   <section id="modeHub" class="mode-hub show">
-    <div class="hub-stage">
-      <div class="hub-topbar">
-        <span class="hub-mark" aria-label="Cue Arena">
-          <svg viewBox="0 0 74 54" aria-hidden="true">
-            <path d="M44 6 30 47h10l4-12h14l4 12h10L57 6H44Z" fill="currentColor"/>
-            <path d="M8 13C2 19 0 27 2 35c2 9 10 15 20 15 6 0 11-2 15-6l-7-7c-2 2-5 3-8 3-5 0-9-3-10-8-1-5 1-9 5-12 4-2 8-2 12 1l6-8c-8-6-18-6-25 0Z" fill="#f5f7f6"/>
-            <path d="m46 27 3-9 4 9h-7Z" fill="#061012"/>
-          </svg>
-        </span>
-        <div class="hub-actions">
-          <button class="hub-settings" type="button" aria-label="Settings" onclick="document.getElementById('menuBtn').click()">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5A3.5 3.5 0 1 0 12 15.5 3.5 3.5 0 0 0 12 8.5Zm8 3.5-1.9-.8c-.1-.5-.3-1-.6-1.5l.8-1.9-2.1-2.1-1.9.8c-.5-.3-1-.5-1.5-.6L12 4h-3l-.8 1.9c-.5.1-1 .3-1.5.6l-1.9-.8-2.1 2.1.8 1.9c-.3.5-.5 1-.6 1.5L1 12v3l1.9.8c.1.5.3 1 .6 1.5l-.8 1.9 2.1 2.1 1.9-.8c.5.3 1 .5 1.5.6L9 23h3l.8-1.9c.5-.1 1-.3 1.5-.6l1.9.8 2.1-2.1-.8-1.9c.3-.5.5-1 .6-1.5L20 15v-3Z" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linejoin="round"/></svg>
-          </button>
-          <button class="hub-profile" type="button" aria-label="Player" onclick="document.getElementById('onlineOpenBtn').click()">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.4" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M5.5 20c.7-4 3.1-6.1 6.5-6.1S17.8 16 18.5 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-          </button>
-        </div>
-      </div>
-      <div class="hub-brand">
-        <h1><span>CUE</span><svg class="hub-title-a" viewBox="0 0 86 78" aria-hidden="true"><path d="M43 3 82 74H66L43 31 20 74H4L43 3Z" fill="none" stroke="currentColor" stroke-width="9" stroke-linejoin="miter"/><circle cx="43" cy="57" r="8" fill="#f4f7f6"/><circle cx="40" cy="54" r="2.2" fill="#fff" opacity=".75"/></svg><span>RENA</span></h1>
-        <p>PRECISION · POSITION · CONTROL</p>
-      </div>
-      <div class="mode-cards" aria-label="Game modes">
-        <button class="mode-card snooker" data-mode="snooker" aria-label="Play Snooker"><img class="mode-card-art" src="assets/hub-snooker-card.webp" alt="" /></button>
-        <button class="mode-card eight" data-mode="8ball" aria-label="Play 8 Ball"><img class="mode-card-art" src="assets/hub-8ball-card.webp" alt="" /></button>
-        <button class="mode-card nine" data-mode="9ball" aria-label="Play 9 Ball"><img class="mode-card-art" src="assets/hub-9ball-card.webp" alt="" /></button>
-      </div>
-      <div class="hub-foot">
-        <span class="hub-signature">YASIR GAMES</span>
-        <button id="onlineOpenBtn" class="online-hub-btn" type="button"><span class="online-globe" aria-hidden="true">◎</span><b>PLAY ONLINE</b><i>→</i></button>
-        <div class="hub-foot-right">
-          <label class="hub-fullscreen-state" aria-hidden="true"><input id="autoFullscreen" type="checkbox" checked /></label>
-          <button class="hub-fullscreen-btn" type="button" aria-label="Fullscreen" onclick="document.getElementById('fullscreenBtn').click()"><span>FULLSCREEN</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
-        </div>
-      </div>
+    <div class="r4-shell" role="region" aria-label="Cue Arena game launcher">
+      <img class="r4-layout" src="assets/hub-layout-r4.png" alt="" draggable="false" />
+
+      <button class="r4-hit r4-settings" type="button" aria-label="Settings" onclick="document.getElementById('menuBtn').click()"></button>
+      <button class="r4-hit r4-profile" type="button" aria-label="Player and online" onclick="document.getElementById('onlineOpenBtn').click()"></button>
+
+      <button class="r4-hit r4-play mode-card" type="button" data-mode="snooker" aria-label="Play Snooker"></button>
+      <button id="onlineOpenBtn" class="r4-hit r4-online" type="button" aria-label="Play online"></button>
+
+      <button class="r4-hit r4-mode r4-snooker mode-card" type="button" data-mode="snooker" aria-label="Play Snooker"></button>
+      <button class="r4-hit r4-mode r4-eight mode-card" type="button" data-mode="8ball" aria-label="Play 8 Ball"></button>
+      <button class="r4-hit r4-mode r4-nine mode-card" type="button" data-mode="9ball" aria-label="Play 9 Ball"></button>
+
+      <button class="r4-hit r4-fullscreen" type="button" aria-label="Fullscreen" onclick="document.getElementById('fullscreenBtn').click()"></button>
+      <input id="autoFullscreen" class="r4-hidden-state" type="checkbox" checked aria-hidden="true" tabindex="-1" />
     </div>
   </section>
 
@@ -146,6 +126,6 @@
   <section id="helpPanel" class="help-panel"><button id="helpClose">×</button></section><button id="quickHelpBtn" class="hidden-text">?</button>
   <div class="rotate-device"><div>↻</div><b>ROTATE TO LANDSCAPE</b></div>
 </main>
-<script src="game.js?v=5.9.2-cinematic-r3"></script>
+<script src="game.js?v=5.10.0-championship-r4"></script>
 </body>
 </html>

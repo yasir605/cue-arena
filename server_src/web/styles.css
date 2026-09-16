@@ -808,3 +808,70 @@ body.mobile-ui .mobile-aim-rotor i{background:#efe8d5;box-shadow:0 0 6px rgba(22
 .mode-hub.show ~ .online-panel.open{z-index:180!important}
 .scrim.show{z-index:170!important}
 .menu-panel.open{z-index:181!important}
+
+
+/* ========================================================================
+   v5.10.0 R4 — CHAMPIONSHIP NIGHT / REFERENCE-LOCKED FRONTEND
+   The approved concept plate is the single visible compositor for the hub.
+   Live DOM controls are transparent hit targets only, preventing any doubled
+   typography, duplicated cards or competing legacy layout from rendering.
+   Gameplay and in-match UI are intentionally outside this scope.
+   ======================================================================== */
+#modeHub.mode-hub{
+  position:fixed!important;inset:0!important;z-index:150!important;
+  display:none!important;align-items:center!important;justify-content:center!important;
+  overflow:hidden!important;background:#020709!important;padding:0!important;margin:0!important;
+  isolation:isolate!important;
+}
+#modeHub.mode-hub.show{display:flex!important}
+#modeHub .r4-shell{
+  position:relative!important;
+  width:min(100vw,177.7777778vh)!important;
+  height:min(100vh,56.25vw)!important;
+  aspect-ratio:16/9!important;
+  flex:0 0 auto!important;
+  overflow:hidden!important;
+  background:#020709!important;
+  box-shadow:0 0 80px #000!important;
+  container-type:size!important;
+}
+#modeHub .r4-layout{
+  position:absolute!important;inset:0!important;width:100%!important;height:100%!important;
+  object-fit:fill!important;display:block!important;pointer-events:none!important;
+  user-select:none!important;-webkit-user-drag:none!important;
+}
+#modeHub .r4-hit,
+#modeHub .r4-hit.mode-card{
+  all:unset!important;box-sizing:border-box!important;position:absolute!important;z-index:5!important;
+  display:block!important;cursor:pointer!important;background:transparent!important;border:0!important;
+  border-radius:10px!important;color:transparent!important;font-size:0!important;
+  -webkit-tap-highlight-color:transparent!important;touch-action:manipulation!important;
+}
+#modeHub .r4-hit::before,#modeHub .r4-hit::after{content:none!important;display:none!important}
+#modeHub .r4-hit:hover{background:rgba(43,235,226,.018)!important}
+#modeHub .r4-hit:active{background:rgba(43,235,226,.042)!important}
+#modeHub .r4-hit:focus-visible{outline:2px solid rgba(63,241,234,.82)!important;outline-offset:2px!important}
+#modeHub .r4-settings{left:89.25%!important;top:3.05%!important;width:4.25%!important;height:7.15%!important}
+#modeHub .r4-profile{left:93.9%!important;top:3.05%!important;width:4.1%!important;height:7.15%!important}
+#modeHub .r4-play{left:14.0%!important;top:39.55%!important;width:24.4%!important;height:7.75%!important;border-radius:16px!important}
+#modeHub .r4-online{left:14.95%!important;top:49.95%!important;width:22.55%!important;height:6.55%!important;border-radius:13px!important}
+#modeHub .r4-snooker{left:21.55%!important;top:75.35%!important;width:18.0%!important;height:14.35%!important}
+#modeHub .r4-eight{left:40.55%!important;top:75.35%!important;width:18.05%!important;height:14.35%!important}
+#modeHub .r4-nine{left:59.55%!important;top:75.35%!important;width:17.9%!important;height:14.35%!important}
+#modeHub .r4-fullscreen{left:84.7%!important;top:93.2%!important;width:12.4%!important;height:5.0%!important;border-radius:6px!important}
+#modeHub .r4-hidden-state{position:absolute!important;opacity:0!important;pointer-events:none!important;width:1px!important;height:1px!important;left:-9999px!important}
+
+/* Erase every previous hub implementation from layout participation. */
+#modeHub .hub-stage,#modeHub .hub-topbar,#modeHub .hub-brand,#modeHub .mode-cards,#modeHub .hub-foot,
+#modeHub .hub-top,#modeHub .hub-edition,#modeHub .hub-mark,#modeHub .hub-actions,#modeHub .hub-signature,
+#modeHub .hub-foot-right,#modeHub .online-hub-btn,#modeHub .hub-fullscreen-btn,#modeHub .hub-fullscreen-state{
+  display:none!important
+}
+
+/* For very wide browser windows, preserve the complete approved 16:9 composition
+   rather than cropping the bottom mode rail. The surrounding letterbox is true black. */
+@media (max-aspect-ratio: 1/1){
+  #modeHub.mode-hub{align-items:flex-start!important;background:#020709!important;overflow:auto!important}
+  #modeHub .r4-shell{width:100vw!important;height:56.25vw!important;min-height:56.25vw!important;margin-top:max(0px,calc((100vh - 56.25vw)/2))!important}
+}
+#modeHub.mode-hub::before,#modeHub.mode-hub::after{content:none!important;display:none!important;background:none!important}
