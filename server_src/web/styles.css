@@ -875,7 +875,7 @@ body.mobile-ui .mobile-aim-rotor i{background:#efe8d5;box-shadow:0 0 6px rgba(22
   #modeHub .r4-shell{width:100vw!important;height:56.25vw!important;min-height:56.25vw!important;margin-top:max(0px,calc((100vh - 56.25vw)/2))!important}
 }
 #modeHub.mode-hub::before,#modeHub.mode-hub::after{content:none!important;display:none!important;background:none!important}
-\n\n/* ========================================================================
+/* ========================================================================
    v5.10.1 R5 — PROFESSIONAL FULL-BLEED + HARDENED HUB INTERACTIONS
    Preserve the approved reference plate while removing dead side bars and
    ensuring all launcher hit targets sit above the compositor on every input.
@@ -940,4 +940,45 @@ body.mobile-ui .mobile-aim-rotor i{background:#efe8d5;box-shadow:0 0 6px rgba(22
 @media (max-aspect-ratio: 1/1){
   #modeHub.mode-hub{align-items:flex-start!important;overflow:auto!important}
   #modeHub .r4-shell{width:100vw!important;height:calc(100vw / 1.7768331562)!important;min-height:calc(100vw / 1.7768331562)!important;margin-top:max(0px,calc((100vh - (100vw / 1.7768331562))/2))!important}
+}
+
+/* ========================================================================
+   v5.10.2 R6 — SEAMLESS FULL-BLEED WIDESCREEN
+   The R5 ambient extension was technically present but intentionally graded
+   so dark (31% brightness + 70% edge scrim + heavy black shell glow) that it
+   read as empty black bars. R6 keeps the protected 16:9 reference plate while
+   making the surrounding scene visibly continue across the entire viewport.
+   ======================================================================== */
+#modeHub.mode-hub{
+  background:
+    linear-gradient(180deg,rgba(1,7,9,.26),rgba(1,6,8,.30)),
+    url("assets/hub-ambient-r6.webp") center center/cover no-repeat!important;
+}
+#modeHub.mode-hub::before{
+  content:""!important;display:block!important;position:absolute!important;
+  inset:-4.5vw!important;z-index:0!important;pointer-events:none!important;
+  background:url("assets/hub-ambient-r6.webp") center center/cover no-repeat!important;
+  filter:brightness(1.02) saturate(.96) contrast(1.03)!important;
+  transform:scale(1.015)!important;opacity:1!important;
+}
+#modeHub.mode-hub::after{
+  content:""!important;display:block!important;position:absolute!important;
+  inset:0!important;z-index:1!important;pointer-events:none!important;
+  background:
+    linear-gradient(90deg,rgba(0,5,7,.16) 0%,rgba(0,5,7,.045) 7%,transparent 16%,transparent 84%,rgba(0,5,7,.045) 93%,rgba(0,5,7,.16) 100%),
+    linear-gradient(180deg,rgba(0,4,6,.08),transparent 68%,rgba(0,3,5,.13))!important;
+  box-shadow:inset 0 0 70px rgba(0,0,0,.20)!important;
+}
+#modeHub .r4-shell{
+  box-shadow:
+    0 0 0 1px rgba(112,234,226,.085),
+    0 0 34px rgba(0,0,0,.34),
+    0 0 90px rgba(18,127,130,.055)!important;
+}
+/* Soften the seam without darkening the ambient wings. */
+@media (min-aspect-ratio: 1.78/1){
+  #modeHub .r4-shell:before,#modeHub .r4-shell:after{
+    width:1px!important;
+    background:linear-gradient(180deg,transparent,rgba(101,235,226,.11) 18%,rgba(101,235,226,.055) 82%,transparent)!important;
+  }
 }
