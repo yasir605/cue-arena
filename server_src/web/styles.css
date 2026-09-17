@@ -982,3 +982,70 @@ body.mobile-ui .mobile-aim-rotor i{background:#efe8d5;box-shadow:0 0 6px rgba(22
     background:linear-gradient(180deg,transparent,rgba(101,235,226,.11) 18%,rgba(101,235,226,.055) 82%,transparent)!important;
   }
 }
+
+/* ========================================================================
+   v5.10.3 R7 — TRUE VIEWPORT FULLSCREEN
+   The launcher itself now fills the browser viewport. No letterbox shell,
+   no ambient side wings, no black gutters. The approved plate stretches
+   with the viewport so all live hit-target percentages remain perfectly
+   aligned with the visible PLAY / mode / settings controls.
+   ======================================================================== */
+#modeHub.mode-hub{
+  inset:0!important;
+  width:100vw!important;
+  height:100vh!important;
+  min-width:100vw!important;
+  min-height:100vh!important;
+  padding:0!important;
+  margin:0!important;
+  overflow:hidden!important;
+  background:#020709!important;
+  align-items:stretch!important;
+  justify-content:stretch!important;
+}
+#modeHub.mode-hub::before,
+#modeHub.mode-hub::after{
+  content:none!important;
+  display:none!important;
+  background:none!important;
+  box-shadow:none!important;
+  filter:none!important;
+  transform:none!important;
+}
+#modeHub .r4-shell{
+  position:absolute!important;
+  inset:0!important;
+  width:100vw!important;
+  height:100vh!important;
+  min-width:100vw!important;
+  min-height:100vh!important;
+  max-width:none!important;
+  max-height:none!important;
+  aspect-ratio:auto!important;
+  margin:0!important;
+  overflow:hidden!important;
+  background:#020709!important;
+  box-shadow:none!important;
+  border:0!important;
+}
+#modeHub .r4-layout{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  object-fit:fill!important;
+  object-position:center!important;
+}
+#modeHub .r4-shell::before,
+#modeHub .r4-shell::after{
+  content:none!important;
+  display:none!important;
+}
+#modeHub .r5-live-version{
+  left:3.55%!important;
+  bottom:3.2%!important;
+}
+@media (max-aspect-ratio:1/1){
+  #modeHub.mode-hub{align-items:stretch!important;overflow:hidden!important}
+  #modeHub .r4-shell{width:100vw!important;height:100vh!important;min-height:100vh!important;margin:0!important}
+}

@@ -62,7 +62,7 @@ const read=p=>fs.readFileSync(new URL(p,import.meta.url),'utf8');
   assert.doesNotMatch(audio,/fetch\(|XMLHttpRequest|new Audio\(/);assert.match(audio,/latencyHint:'interactive'/);assert.match(audio,/oversample='4x'/);
   assert.match(main,/onlineLocalCueAudioId=clientShotId;audio\.cueStrike\(cue\.power\)/);assert.match(main,/if\(!localInstant\)audio\.cueStrike\(P\)/);
   assert.match(audio,/No continuous broadband rolling layer/);assert.doesNotMatch(audio,/src\.loop=true/);
-  assert.match(html,/game\.js\?v=5\.10\.2-seamless-r6/);assert.match(html,/styles\.css\?v=5\.10\.2-seamless-r6/);
+  assert.match(html,/game\.js\?v=5\.10\.3-fullscreen-r7/);assert.match(html,/styles\.css\?v=5\.10\.3-fullscreen-r7/);
 }
 
 console.log('CUE ARENA REGRESSION TESTS: PASS');
